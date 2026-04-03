@@ -251,6 +251,75 @@ function consequenceBiasWeight(event, state) {
   return Math.min(bonus, 2.4);
 }
 
+function stablePlayProfile(state) {
+  if (state.round < 5) return { level: 0 };
+
+  const stableCash = state.cash >= 56;
+  const stableTeam = state.team >= 56;
+  const stableTrust = state.trust >= 53;
+  const lowRisk =
+    state.hidden.executionDebt <= 30 &&
+    state.hidden.orgFatigue <= 32 &&
+    state.hidden.riskExposure <= 30;
+  const lowConflict = state.hidden.politicalHeat <= 24 && state.hidden.bossDependency <= 38;
+  const growthLagging =
+    state.growth <= 50 ||
+    state.growth + 10 <= Math.max(state.cash, state.team, state.trust);
+  const marginComfort = state.hidden.marginHealth >= 50;
+  const customerComfort = state.hidden.customerTrust >= 50;
+
+  let level = 0;
+  if (stableCash) level += 1.1;
+  if (stableTeam) level += 1.1;
+  if (stableTrust) level += 0.9;
+  if (lowRisk) level += 0.9;
+  if (lowConflict) level += 0.8;
+  if (growthLagging) level += 1.6;
+  if (marginComfort) level += 0.5;
+  if (customerComfort) level += 0.35;
+  if (state.round >= 8) level += 0.6;
+  if (state.round >= 11) level += 0.6;
+
+  return {
+    level,
+    stableCash,
+    stableTeam,
+    stableTrust,
+    lowRisk,
+    lowConflict,
+    growthLagging,
+    marginComfort,
+    customerComfort,
+  };
+}
+
+function stabilityPressureWeight(event, state) {
+  if (!event.tags?.length) return 0;
+  const profile = stablePlayProfile(state);
+  if (profile.level < 3.2) return 0;
+
+  let bonus = 0;
+  if (profile.growthLagging && event.tags.includes("增长")) bonus += 2.8;
+  if (profile.growthLagging && event.tags.includes("利润质量")) bonus += 1.3;
+  if ((profile.stableTrust || profile.lowConflict) && (event.tags.includes("老板") || event.tags.includes("政治"))) bonus += 2.2;
+  if (profile.lowRisk && (event.tags.includes("风险") || event.tags.includes("合规"))) bonus += 1.2;
+  if (state.round >= 8 && profile.customerComfort && event.tags.includes("客户")) bonus += 0.8;
+
+  if (profile.stableCash && !profile.growthLagging && event.tags.includes("现金")) bonus -= 1.2;
+  if (profile.stableCash && profile.growthLagging && event.tags.includes("现金")) bonus -= 2.4;
+  if (profile.stableTeam && event.tags.includes("团队")) bonus -= 1.4;
+  if (profile.lowRisk && (event.tags.includes("库存") || event.tags.includes("数据") || event.tags.includes("系统"))) bonus -= 0.8;
+
+  if (profile.level >= 5.2) {
+    if (event.tags.includes("增长")) bonus += 1.4;
+    if (event.tags.includes("老板") || event.tags.includes("政治")) bonus += 1.1;
+    if (event.tags.includes("现金")) bonus -= 0.8;
+    if (event.tags.includes("团队")) bonus -= 0.7;
+  }
+
+  return bonus;
+}
+
 function balanceWeight(event, state) {
   let bonus = 0;
   if ((state.cash <= 40) && (event.tags?.includes("现金") || event.tags?.includes("库存"))) bonus += 2;
@@ -265,6 +334,7 @@ function balanceWeight(event, state) {
   bonus += scenarioBiasWeight(event, state);
   bonus += phaseFlavorWeight(event, state);
   bonus += consequenceBiasWeight(event, state);
+  bonus += stabilityPressureWeight(event, state);
   const recentPacks = state.memory.recentPacks || [];
   const recentTags = state.memory.recentTags || [];
   const recentRoles = state.memory.recentRoles || [];
@@ -294,6 +364,19 @@ function chainUrgency(event, state) {
   if (state.memory.scheduledEffects.length >= 3) score += 0.35;
   if ((state.memory.recentRoles || []).at(-1) === event.role) score -= 0.6;
   if ((state.memory.recentTitles || []).includes(event.title)) score -= 1.4;
+
+  const profile = stablePlayProfile(state);
+  if (profile.level >= 3.2) {
+    const growthPressureIds = ["margin_truth_day", "price_war_spiral", "boardroom_illusion"];
+    const bossPressureIds = ["boss_dependency", "stand_side", "owner_override", "trust_crack", "forecast_trust_break"];
+    const safeReliefIds = ["cash_alert", "collection_crunch", "supplier_stop_ship", "payroll_crunch", "finance_meltdown", "manager_walkout"];
+
+    if (profile.growthLagging && growthPressureIds.includes(event.id)) score += profile.level >= 5.2 ? 2.8 : 1.8;
+    if ((profile.stableTrust || profile.lowConflict) && bossPressureIds.includes(event.id)) score += profile.level >= 5.2 ? 2.5 : 1.6;
+    if (profile.lowRisk && event.id === "boardroom_illusion") score += 1;
+    if ((profile.stableCash || profile.stableTeam) && safeReliefIds.includes(event.id)) score -= 1.1;
+  }
+
   return score;
 }
 
