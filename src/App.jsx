@@ -1208,12 +1208,18 @@ function App() {
         </div>
 
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+          {(state.screen === "event" || state.screen === "result") && (
+            <div style={{ flexShrink: 0, display: "flex", justifyContent: "center", padding: "6px 16px 2px" }}>
+              <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9f6b4f" }}>
+                入职第 {state.screen === "event" ? state.round : Math.max(1, state.round - 1)} 个月
+              </div>
+            </div>
+          )}
           <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px clamp(12px, 3vw, 16px)", position: "relative", overflowY: "auto", overflowX: "hidden" }}>
             <AnimatePresence mode="wait">
               {state.screen === "event" && (
                 <motion.div key={`event_${state.round}_${currentEvent.id}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ width: "100%", display: "grid", justifyItems: "center", gap: 14 }}>
-                  <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10, marginTop: -40 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9f6b4f", marginBottom: 10 }}>入职第 {state.round} 个月</div>
+                  <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10 }}>
                     <div style={speechRoleStyle}>{currentSpeech.speaker}</div>
                     <div style={speechQuoteStyle}>{currentSpeech.quote}</div>
                     <p style={speechDescStyle}>{currentSpeech.followup}</p>
@@ -1224,8 +1230,7 @@ function App() {
 
               {state.screen === "result" && latestOutcome && (
                 <motion.div key={`result_${state.round}_${latestOutcome.choiceLabel}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ width: "100%", display: "grid", justifyItems: "center", gap: 14 }}>
-                  <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10, marginTop: -40 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9f6b4f", marginBottom: 10 }}>入职第 {Math.max(1, state.round - 1)} 个月</div>
+                  <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10 }}>
                     <div style={speechRoleStyle}>{latestOutcome.speaker}</div>
                     <div style={speechQuoteStyle}>{latestOutcome.quote}</div>
                     <p style={speechDescStyle}>{latestOutcome.followup}</p>
