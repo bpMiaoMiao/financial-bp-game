@@ -934,7 +934,7 @@ function SwipeCard({ event, onChoose }) {
       >
         <div style={{ position: "absolute", inset: 0, background: chainTone.halo }} />
         <div style={{ position: "relative", display: "grid", justifyItems: "center", gap: 12 }}>
-          <div style={{ fontSize: "clamp(72px, 11vh, 92px)", lineHeight: 1 }}>{event.avatar}</div>
+          <div style={{ fontSize: "clamp(84px, 12.5vh, 108px)", lineHeight: 1 }}>{event.avatar}</div>
         </div>
         <div style={{ position: "relative", width: "100%", display: "grid", gap: 10, justifyItems: "center" }}>
           <div style={{ position: "relative", width: "100%", minHeight: 54, display: "grid", placeItems: "center" }}>
@@ -962,10 +962,50 @@ function OutcomeCard({ outcome, onContinue }) {
           <span style={eventMetaStyle}>{outcome.choiceLabel}</span>
         </div>
         <div style={{ position: "relative", display: "grid", justifyItems: "center", gap: 12 }}>
-          <div style={{ fontSize: "clamp(72px, 11vh, 92px)", lineHeight: 1 }}>{outcome.avatar}</div>
+          <div style={{ fontSize: "clamp(84px, 12.5vh, 108px)", lineHeight: 1 }}>{outcome.avatar}</div>
         </div>
         <div style={{ height: 12 }} />
       </div>
+    </div>
+  );
+}
+
+function BriefingCard({ onStart }) {
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-160, 0, 160], [-10, 0, 10]);
+  const glow = useTransform(x, [-140, 0, 140], ["rgba(15,118,110,0.08)", "rgba(255,255,255,0.72)", "rgba(190,24,93,0.08)"]);
+  const startedRef = useRef(false);
+
+  const handleEnd = (_, info) => {
+    const distance = info.offset.x;
+    if (Math.abs(distance) > 88) {
+      if (!startedRef.current) {
+        startedRef.current = true;
+        onStart(distance < 0 ? "left" : "right");
+      }
+      return;
+    }
+    animate(x, 0, { type: "spring", stiffness: 360, damping: 28 });
+  };
+
+  return (
+    <div style={{ position: "relative", width: "100%", display: "grid", justifyItems: "center", gap: 18 }}>
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.14}
+        onDragEnd={handleEnd}
+        style={{ x, rotate, width: "min(100%, 360px)", display: "grid", gap: 18, padding: "28px 26px", borderRadius: 32, background: glow, border: "1px solid rgba(159,107,79,0.12)", boxShadow: "0 24px 70px rgba(61,41,26,0.08)", backdropFilter: "blur(10px)", cursor: "grab", touchAction: "pan-y" }}
+      >
+        <div style={briefingEyebrowStyle}>游戏提示</div>
+        <div style={briefingTitleStyle}>这是一款财务BP职场生存模拟游戏</div>
+        <div style={briefingBodyStyle}>
+          <p style={briefingParagraphStyle}>很多选择没有正确答案，只有取舍。</p>
+          <p style={briefingParagraphStyle}>你做的每个决定，不只影响当下，也会在未来带来意想不到的变化。</p>
+          <p style={{ ...briefingParagraphStyle, color: "#2f241e", fontWeight: 700 }}>而你能做的，只有拼命维持那一点脆弱的平衡。</p>
+        </div>
+      </motion.div>
+      <div style={briefingHintStyle}>左右滑动以开始游戏</div>
     </div>
   );
 }
@@ -979,7 +1019,7 @@ function App() {
   const [state, setState] = useState(() => scenarioToState());
   const [copied, setCopied] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
-  const [producerVisible, setProducerVisible] = useState(true);
+  const [openingScreen, setOpeningScreen] = useState("producer");
   const audioRef = useRef(null);
   const prevSceneRef = useRef({ screen: state.screen, eventId: null });
 
@@ -995,10 +1035,12 @@ function App() {
   const surfaceStatusPillStyle = useMemo(() => ({ ...statusPillStyle, background: theme.miniBg }), [theme]);
 
   useEffect(() => {
-    if (!producerVisible) return undefined;
-    const timer = window.setTimeout(() => setProducerVisible(false), 3000);
+    if (openingScreen !== "producer") return undefined;
+    const timer = window.setTimeout(() => {
+      setOpeningScreen("brief");
+    }, 3000);
     return () => window.clearTimeout(timer);
-  }, [producerVisible]);
+  }, [openingScreen]);
 
   useEffect(() => {
     const previous = prevSceneRef.current;
@@ -1029,11 +1071,15 @@ function App() {
           },
         };
       });
-    }, 3000);
+    }, 4000);
     return () => window.clearTimeout(timer);
   }, [state.screen, latestOutcome]);
 
   const restart = () => setState(scenarioToState());
+  const startFromBriefing = (direction) => {
+    playUiSound(audioRef, direction === "left" ? "swipeLeft" : "swipeRight", soundOn);
+    setOpeningScreen(null);
+  };
 
   const advance = (nextState) => {
     const ending = pickEnding(nextState);
@@ -1175,20 +1221,26 @@ function App() {
       <div style={{ width: "min(100%, 430px)", height: "min(calc(100dvh - 16px), 860px)", maxHeight: "calc(100dvh - 16px)", minHeight: 0, boxSizing: "border-box", background: theme.frameBg, borderRadius: 34, overflow: "hidden", border: theme.frameBorder, boxShadow: theme.frameShadow, display: "flex", flexDirection: "column", position: "relative", transition: "background 240ms ease, box-shadow 240ms ease" }}>
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: theme.overlay }} />
 
-        {producerVisible ? (
+        {openingScreen ? (
           <AnimatePresence mode="wait">
             <motion.div
-              key="producer_splash"
+              key={openingScreen}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              style={producerSplashStyle}
+              style={openingScreen === "producer" ? producerSplashStyle : briefingSplashStyle}
             >
-              <div style={producerBackdropStyle} />
-              <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.7 }} style={{ position: "relative", display: "grid", justifyItems: "center", gap: 16 }}>
-                <div style={producerTitleStyle}>鑫姐的财务圈</div>
-                <div style={producerTagStyle}>荣誉出品</div>
-              </motion.div>
+              <div style={openingScreen === "producer" ? producerBackdropStyle : briefingBackdropStyle} />
+              {openingScreen === "producer" ? (
+                <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.7 }} style={producerLockupStyle}>
+                  <div style={producerBylineStyle}>A Game by</div>
+                  <div style={producerTitleStyle}>鑫姐的财务圈</div>
+                </motion.div>
+              ) : (
+                <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6 }} style={{ position: "relative", width: "100%", display: "grid", justifyItems: "center", padding: "0 18px" }}>
+                  <BriefingCard onStart={startFromBriefing} />
+                </motion.div>
+              )}
             </motion.div>
           </AnimatePresence>
         ) : (
@@ -1338,6 +1390,15 @@ const secondaryBtnStyle = { height: 46, border: "1px solid rgba(0,0,0,0.08)", bo
 const iconBtnStyle = { width: 36, height: 36, borderRadius: 999, border: "1px solid rgba(0,0,0,0.06)", background: "white", display: "grid", placeItems: "center", cursor: "pointer" };
 const producerSplashStyle = { position: "relative", flex: 1, display: "grid", placeItems: "center", overflow: "hidden", background: "linear-gradient(180deg, #f7efe2 0%, #ecdcc8 54%, #e4d6cb 100%)" };
 const producerBackdropStyle = { position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 28%, rgba(255,255,255,0.9), transparent 30%), radial-gradient(circle at 50% 78%, rgba(170,122,84,0.16), transparent 38%)" };
-const producerTagStyle = { padding: "8px 14px", borderRadius: 999, background: "rgba(255,250,244,0.72)", border: "1px solid rgba(159,107,79,0.16)", fontSize: 12, color: "#9f6b4f", letterSpacing: "0.24em", textTransform: "uppercase" };
-const producerTitleStyle = { fontSize: "clamp(30px, 9vw, 40px)", lineHeight: 1.15, fontWeight: 900, color: "#2f241e", letterSpacing: "0.08em", textAlign: "center", fontFamily: '"Iowan Old Style", "Georgia", serif', textShadow: "0 1px 0 rgba(255,255,255,0.4)" };
+const producerLockupStyle = { position: "relative", display: "grid", justifyItems: "center", gap: 14, padding: "24px 20px", textAlign: "center" };
+const producerBylineStyle = { fontSize: 12, color: "#9f6b4f", letterSpacing: "0.34em", textTransform: "uppercase", fontWeight: 700, textShadow: "0 1px 0 rgba(255,255,255,0.38)" };
+const producerTitleStyle = { fontSize: "clamp(34px, 10vw, 44px)", lineHeight: 1.12, fontWeight: 900, color: "#2f241e", letterSpacing: "0.1em", textAlign: "center", fontFamily: '"Iowan Old Style", "Georgia", serif', textShadow: "0 1px 0 rgba(255,255,255,0.42)" };
+const briefingSplashStyle = { position: "relative", flex: 1, display: "grid", placeItems: "center", overflow: "hidden", background: "linear-gradient(180deg, #f8f1e6 0%, #eee3d3 50%, #e8ddd2 100%)" };
+const briefingBackdropStyle = { position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 22%, rgba(255,255,255,0.92), transparent 28%), radial-gradient(circle at 18% 82%, rgba(159,107,79,0.08), transparent 26%), radial-gradient(circle at 82% 76%, rgba(120,82,64,0.08), transparent 26%)" };
+const briefingInnerStyle = { position: "relative", width: "min(100%, 360px)", display: "grid", gap: 18, padding: "28px 26px", borderRadius: 32, background: "rgba(255,251,246,0.72)", border: "1px solid rgba(159,107,79,0.12)", boxShadow: "0 24px 70px rgba(61,41,26,0.08)", backdropFilter: "blur(10px)" };
+const briefingEyebrowStyle = { justifySelf: "center", padding: "7px 12px", borderRadius: 999, fontSize: 11, color: "#9f6b4f", letterSpacing: "0.22em", textTransform: "uppercase", background: "rgba(255,255,255,0.65)", border: "1px solid rgba(159,107,79,0.12)" };
+const briefingTitleStyle = { fontSize: "clamp(24px, 7.2vw, 31px)", lineHeight: 1.28, fontWeight: 900, color: "#2f241e", textAlign: "center", fontFamily: '"Iowan Old Style", "Georgia", serif' };
+const briefingBodyStyle = { display: "grid", gap: 14, textAlign: "center" };
+const briefingParagraphStyle = { margin: 0, fontSize: "clamp(15px, 4vw, 17px)", lineHeight: 1.8, color: "#5f4a3f" };
+const briefingHintStyle = { fontSize: 11, color: "#9f6b4f", letterSpacing: "0.22em", textTransform: "uppercase" };
 export default App;
