@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { RotateCcw, Share2, Copy, Skull, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { RotateCcw, Share2, Copy, Skull, Volume2, VolumeX } from "lucide-react";
 import { scenarios, initialRelations } from "./data/scenarios";
 import { baseEvents } from "./data/baseEvents";
 import { chainEvents } from "./data/chainEvents";
@@ -32,6 +32,9 @@ const HIDDEN_KEYS = [
   "politicalHeat",
 ];
 const RELATION_KEYS = ["boss", "sales", "hr", "ops", "finance", "legal"];
+const SHOW_DEBUG_INSIGHTS = false;
+const HIDDEN_RISK_UP_KEYS = new Set(["executionDebt", "orgFatigue", "riskExposure", "bossDependency", "politicalHeat"]);
+const HIDDEN_RISK_DOWN_KEYS = new Set(["marginHealth", "dataMaturity", "customerTrust"]);
 
 function ensureAudioContext(audioRef) {
   if (typeof window === "undefined") return null;
@@ -126,10 +129,66 @@ function applyDeltaBlock(base, delta, keys) {
   return next;
 }
 
+function phaseImpactProfile(round) {
+  const phase = phaseOfRound(round);
+  if (phase === "early") {
+    return { beneficial: 1, harmful: 1 };
+  }
+  if (phase === "mid") {
+    return { beneficial: 0.88, harmful: 1.3 };
+  }
+  return { beneficial: 0.72, harmful: 1.65 };
+}
+
 function phaseOfRound(round) {
   if (round <= 4) return "early";
   if (round <= 8) return "mid";
   return "late";
+}
+
+function scaledMagnitude(value, multiplier) {
+  if (!value) return 0;
+  const scaled = Math.round(Math.abs(value) * multiplier);
+  return Math.max(1, scaled);
+}
+
+function scaleStatDelta(delta = {}, round) {
+  const profile = phaseImpactProfile(round);
+  return Object.fromEntries(
+    Object.entries(delta).map(([key, value]) => {
+      if (!value) return [key, 0];
+      const multiplier = value > 0 ? profile.beneficial : profile.harmful;
+      return [key, Math.sign(value) * scaledMagnitude(value, multiplier)];
+    }),
+  );
+}
+
+function scaleRelationDelta(delta = {}, round) {
+  const profile = phaseImpactProfile(round);
+  return Object.fromEntries(
+    Object.entries(delta).map(([key, value]) => {
+      if (!value) return [key, 0];
+      const multiplier = value > 0 ? profile.beneficial : profile.harmful;
+      return [key, Math.sign(value) * scaledMagnitude(value, multiplier)];
+    }),
+  );
+}
+
+function scaleHiddenDelta(delta = {}, round) {
+  const profile = phaseImpactProfile(round);
+  return Object.fromEntries(
+    Object.entries(delta).map(([key, value]) => {
+      if (!value) return [key, 0];
+      const isHarmful =
+        (HIDDEN_RISK_UP_KEYS.has(key) && value > 0) ||
+        (HIDDEN_RISK_DOWN_KEYS.has(key) && value < 0);
+      const isHelpful =
+        (HIDDEN_RISK_UP_KEYS.has(key) && value < 0) ||
+        (HIDDEN_RISK_DOWN_KEYS.has(key) && value > 0);
+      const multiplier = isHarmful ? profile.harmful : (isHelpful ? profile.beneficial : 1);
+      return [key, Math.sign(value) * scaledMagnitude(value, multiplier)];
+    }),
+  );
 }
 
 function recentRepeats(list = [], value) {
@@ -249,10 +308,10 @@ function pickChainEvent(state) {
   const top = scored[0];
   const recentKinds = state.memory.recentKinds || [];
   const chainStreak = recentRepeats(recentKinds, "chain");
-  const hardPressure = state.cash <= 30 || state.team <= 32 || state.trust <= 32 || state.hidden.riskExposure >= 58 || state.hidden.politicalHeat >= 58 || state.hidden.customerTrust <= 32;
+  const hardPressure = state.cash <= 36 || state.team <= 38 || state.trust <= 38 || state.hidden.riskExposure >= 52 || state.hidden.politicalHeat >= 52 || state.hidden.customerTrust <= 38;
 
-  if (state.round <= 2 && top.urgency < 11) return null;
-  if (recentKinds.at(-1) === "chain" && chainStreak >= 2 && top.urgency < 10.5 && !hardPressure) return null;
+  if (state.round <= 2 && top.urgency < 10.2) return null;
+  if (recentKinds.at(-1) === "chain" && chainStreak >= 2 && top.urgency < 9.6 && !hardPressure) return null;
 
   const pool = scored
     .filter((event) => event.urgency >= top.urgency - 1.2)
@@ -287,11 +346,14 @@ function applyScheduledEffects(state) {
     const payload = delayedEffects[item.type];
     if (!payload) continue;
     const routeId = item.routeId || findRouteId({ eventId: item.sourceEventId, delayedType: item.type });
+    const scaledEffect = scaleStatDelta(payload.effect, state.round);
+    const scaledHidden = scaleHiddenDelta(payload.hidden, state.round);
+    const scaledRelations = scaleRelationDelta(payload.relations, state.round);
     next = {
       ...next,
-      ...applyDeltaBlock(next, payload.effect, STAT_KEYS),
-      hidden: applyDeltaBlock(next.hidden, payload.hidden, HIDDEN_KEYS),
-      relations: applyDeltaBlock(next.relations, payload.relations, RELATION_KEYS),
+      ...applyDeltaBlock(next, scaledEffect, STAT_KEYS),
+      hidden: applyDeltaBlock(next.hidden, scaledHidden, HIDDEN_KEYS),
+      relations: applyDeltaBlock(next.relations, scaledRelations, RELATION_KEYS),
       memory: {
         ...next.memory,
         causalLedger: pushLedger(next.memory.causalLedger, {
@@ -340,7 +402,7 @@ function scenarioToState(scenario = sample(scenarios)) {
     relations: { ...initialRelations },
     round: 1,
     year: 1,
-    screen: "intro",
+    screen: "event",
     ended: false,
     flags: [],
     usedIds: [],
@@ -373,15 +435,15 @@ function choosePersona(state) {
 }
 
 function pickEnding(state) {
-  if (state.cash <= 0) return { title: "死于：现金流断裂", text: "最后不是市场把你打死的，是每一次“先冲一下”把账上的最后一口气磨没了。", memo: "规模能替你赢掌声，现金只会安静地决定你还能活多久。" };
-  if (state.team <= 0 || state.hidden.orgFatigue >= 94) return { title: "死于：组织崩盘", text: "报表还在出，流程还在转，但真正能把事情扛起来的人已经先散了。", memo: "组织不是成本项，它通常会在你最需要它的时候，按最贵的价格离开。" };
-  if (state.trust <= 0) return { title: "死于：老板不再信你", text: "你不一定每次都错，只是慢慢失去了那个还能把真话送到桌上的位置。", memo: "在经营里，判断正确只是开始，被关键的人听进去才算完整。" };
-  if (state.growth <= 0) return { title: "死于：增长停摆", text: "你把风险一层层压住了，也把向前的劲一并压没了。", memo: "守住盘子很重要，但公司活着不是为了证明自己没死。" };
-  if (state.hidden.customerTrust <= 0) return { title: "死于：客户反噬", text: "内部每一页表都还过得去，外部却已经开始用退款、流失和沉默给你答案。", memo: "客户通常不会在第一天翻脸，只会在你以为还来得及的时候悄悄离开。" };
-  if (state.hidden.riskExposure >= 100) return { title: "死于：风险集中爆雷", text: "你把太多灰区留给以后处理，最后它们挑了同一天回来收账。", memo: "很多雷不是突然炸的，只是你一直把爆炸那天往后推。" };
-  if (state.hidden.bossDependency >= 100 || state.trust >= 100) return { title: "死于：过度靠近权力", text: "你成了最被需要的那个人，也一步步把不该你背的东西都背到了自己身上。", memo: "离权力太远会失去位置，离得太近会失去边界。" };
-  if (state.cash >= 100 && state.growth < 45) return { title: "死于：过度保守", text: "钱是留下来了，但整个盘子也一起慢慢失去了想赢的速度。", memo: "安全从来不是终点，它最多只是继续向前的门票。" };
-  if (state.growth >= 100 && state.hidden.marginHealth < 35) return { title: "死于：虚假繁荣", text: "数字一度很热闹，可真正留下来的只有被掏空的利润、现金和团队。", memo: "热闹会让人短暂忘记真相，但经营最终只认真相。" };
+  if (state.cash <= 12) return { title: "死于：现金流断裂", text: "最后不是市场把你打死的，是每一次“先冲一下”把账上的最后一口气磨没了。", memo: "规模能替你赢掌声，现金只会安静地决定你还能活多久。" };
+  if (state.team <= 12 || state.hidden.orgFatigue >= 82) return { title: "死于：组织崩盘", text: "报表还在出，流程还在转，但真正能把事情扛起来的人已经先散了。", memo: "组织不是成本项，它通常会在你最需要它的时候，按最贵的价格离开。" };
+  if (state.trust <= 12) return { title: "死于：老板不再信你", text: "你不一定每次都错，只是慢慢失去了那个还能把真话送到桌上的位置。", memo: "在经营里，判断正确只是开始，被关键的人听进去才算完整。" };
+  if (state.growth <= 12) return { title: "死于：增长停摆", text: "你把风险一层层压住了，也把向前的劲一并压没了。", memo: "守住盘子很重要，但公司活着不是为了证明自己没死。" };
+  if (state.hidden.customerTrust <= 12) return { title: "死于：客户反噬", text: "内部每一页表都还过得去，外部却已经开始用退款、流失和沉默给你答案。", memo: "客户通常不会在第一天翻脸，只会在你以为还来得及的时候悄悄离开。" };
+  if (state.hidden.riskExposure >= 88) return { title: "死于：风险集中爆雷", text: "你把太多灰区留给以后处理，最后它们挑了同一天回来收账。", memo: "很多雷不是突然炸的，只是你一直把爆炸那天往后推。" };
+  if (state.hidden.bossDependency >= 88 || state.trust >= 88) return { title: "死于：过度靠近权力", text: "你成了最被需要的那个人，也一步步把不该你背的东西都背到了自己身上。", memo: "离权力太远会失去位置，离得太近会失去边界。" };
+  if (state.cash >= 88 && state.growth < 44) return { title: "死于：过度保守", text: "钱是留下来了，但整个盘子也一起慢慢失去了想赢的速度。", memo: "安全从来不是终点，它最多只是继续向前的门票。" };
+  if (state.growth >= 88 && state.hidden.marginHealth < 42) return { title: "死于：虚假繁荣", text: "数字一度很热闹，可真正留下来的只有被掏空的利润、现金和团队。", memo: "热闹会让人短暂忘记真相，但经营最终只认真相。" };
   return null;
 }
 
@@ -571,10 +633,30 @@ function routeTrailText(routeId, history = [], currentLabel = "") {
   return `因果链：${summary} 当前走到：${deduped.join(" -> ")}`;
 }
 
+function shortRouteTrailText(routeId, history = [], currentLabel = "") {
+  if (!routeId) return "";
+  const steps = history
+    .filter((entry) => entry.routeId === routeId)
+    .slice(-1)
+    .map((entry) => ledgerEntryLabel(entry))
+    .filter(Boolean);
+  if (currentLabel) steps.push(currentLabel);
+  const deduped = steps.filter((step, index) => steps.indexOf(step) === index);
+  if (!deduped.length) return routeLabel(routeId) ? `因果链：${routeLabel(routeId)}` : "";
+  if (deduped.length === 1) return routeLabel(routeId) ? `因果链：${routeLabel(routeId)} · ${deduped[0]}` : `因果链：${deduped[0]}`;
+  return `因果链：${deduped.join(" -> ")}`;
+}
+
 function sourceTraceLine(note) {
   if (!note?.sourceTitle) return "";
   const choice = note.sourceChoiceLabel ? `，你当时选了「${note.sourceChoiceLabel}」` : "";
   return `这是第 ${note.sourceRound} 轮「${note.sourceTitle}」埋下的后账${choice}。`;
+}
+
+function shortSourceTraceLine(note) {
+  if (!note?.sourceTitle) return "";
+  const choice = note.sourceChoiceLabel ? ` · ${note.sourceChoiceLabel}` : "";
+  return `后账来自第 ${note.sourceRound} 轮「${note.sourceTitle}」${choice}`;
 }
 
 function chainSpeech(event, state) {
@@ -641,6 +723,23 @@ function outcomeFragment(kind, key, value) {
   return table[key] || `${kind === "relation" ? "这层关系" : "这块局面"}${value > 0 ? "先稳了一点" : "又更紧了一点"}`;
 }
 
+function singleLine(text = "") {
+  return text
+    .replace(/^[“"]|[”"]$/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/[。！？]+$/g, "")
+    .trim();
+}
+
+function conciseOutcomeFollowup({ override, highlights, dueNote, routeId }) {
+  if (override?.followup) return singleLine(override.followup);
+  if (dueNote?.desc) return singleLine(dueNote.desc);
+  if (dueNote?.title) return singleLine(dueNote.title);
+  if (highlights?.length) return singleLine(highlights[0]);
+  if (routeId && routeLabel(routeId)) return `这一步把你往${routeLabel(routeId)}又推了一点`;
+  return "";
+}
+
 function buildChoiceOutcome(event, choice, side, notes = []) {
   const override = outcomeOverrides[event.id]?.[side];
   const statHighlights = topDeltaEntries(choice.effect, 2).map(([key, value]) => outcomeFragment("stat", key, value));
@@ -680,20 +779,13 @@ function buildChoiceOutcome(event, choice, side, notes = []) {
         ];
 
   const dueNote = notes[0];
-  const followupParts = [];
-  if (override?.followup) followupParts.push(override.followup);
-  else if (highlights.length) followupParts.push(highlights.join("，"));
-  if (dueNote) {
-    const trace = sourceTraceLine(dueNote);
-    followupParts.push(`${trace}${trace ? " " : ""}现在追上来的是：${dueNote.title}`);
-  }
   const routeId = findRouteId({ eventId: event.id, flags: choice.flags || [] });
-  const trail = dueNote?.routeId
-    ? routeTrailText(dueNote.routeId, [{ routeId: dueNote.routeId, title: dueNote.sourceTitle, choiceLabel: dueNote.sourceChoiceLabel }], dueNote.title)
-    : routeId
-      ? `${routeNarratives[routeId] || `这一步正在把你往「${routeLabel(routeId)}」这条线继续推。`}`
-      : "";
-  if (trail) followupParts.push(trail);
+  const followup = conciseOutcomeFollowup({
+    override,
+    highlights,
+    dueNote,
+    routeId: dueNote?.routeId || routeId,
+  });
 
   return {
     role: event.role,
@@ -701,7 +793,7 @@ function buildChoiceOutcome(event, choice, side, notes = []) {
     choiceLabel: side === "left" ? `你选了「${event.left.label}」` : `你选了「${event.right.label}」`,
     speaker: override?.speaker || `${event.role}的反应`,
     quote: eventQuote(override?.quote || stablePick(`${event.id}_${side}_${tone}`, quotePool)),
-    followup: followupParts.length ? eventQuote(followupParts.join("。") + "。") : "",
+    followup,
   };
 }
 
@@ -795,11 +887,15 @@ function ProgressBar({ label, value }) {
   );
 }
 
-function SwipeCard({ event, meta, onChoose }) {
+function SwipeCard({ event, onChoose }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-180, 180], [-11, 11]);
-  const leftOpacity = useTransform(x, [-160, -60, 0], [1, 0.55, 0]);
-  const rightOpacity = useTransform(x, [0, 60, 160], [0, 0.55, 1]);
+  const leftOpacity = useTransform(x, [-180, -70, -18, 0], [1, 0.88, 0.28, 0]);
+  const rightOpacity = useTransform(x, [0, 18, 70, 180], [0, 0.28, 0.88, 1]);
+  const leftLift = useTransform(x, [-180, -70, -18, 0], [-5, -2, 0, 4]);
+  const rightLift = useTransform(x, [0, 18, 70, 180], [4, 0, -2, -5]);
+  const leftScale = useTransform(x, [-180, -70, -18, 0], [1.08, 1.03, 0.98, 0.94]);
+  const rightScale = useTransform(x, [0, 18, 70, 180], [0.94, 0.98, 1.03, 1.08]);
 
   const handleEnd = async (_, info) => {
     if (info.offset.x < -110) {
@@ -828,34 +924,26 @@ function SwipeCard({ event, meta, onChoose }) {
       };
 
   return (
-    <div style={{ position: "relative", width: "100%", maxWidth: 340, height: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <motion.div style={{ opacity: leftOpacity, position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", color: "#059669", fontSize: 14, fontWeight: 800, letterSpacing: "0.16em" }}>
-        ← {event.left.label}
-      </motion.div>
-      <motion.div style={{ opacity: rightOpacity, position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", color: "#e11d48", fontSize: 14, fontWeight: 800, letterSpacing: "0.16em" }}>
-        {event.right.label} →
-      </motion.div>
+    <div style={{ position: "relative", width: "100%", maxWidth: 340, height: "clamp(280px, 42vh, 360px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.12}
         onDragEnd={handleEnd}
-        style={{ x, rotate, width: 268, minHeight: 320, borderRadius: 32, background: chainTone.background, border: chainTone.border, boxShadow: chainTone.boxShadow, padding: 28, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", cursor: "grab" }}
+        style={{ x, rotate, zIndex: 2, width: "min(100%, 268px)", minHeight: "clamp(268px, 38vh, 320px)", borderRadius: 32, background: chainTone.background, border: chainTone.border, boxShadow: chainTone.boxShadow, padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", cursor: "grab" }}
       >
         <div style={{ position: "absolute", inset: 0, background: chainTone.halo }} />
-        <div style={{ position: "relative", display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={event.priority ? alertMetaStyle : eventMetaStyle}>{event.priority ? "连锁事件" : meta.phase}</span>
-          {meta.pendingEffects > 0 && <span style={eventMetaStyle}>埋雷 {meta.pendingEffects}</span>}
-        </div>
         <div style={{ position: "relative", display: "grid", justifyItems: "center", gap: 12 }}>
-          <div style={{ fontSize: 92, lineHeight: 1 }}>{event.avatar}</div>
-          <div style={{ width: 64, height: 1, background: "rgba(159,107,79,0.35)" }} />
+          <div style={{ fontSize: "clamp(72px, 11vh, 92px)", lineHeight: 1 }}>{event.avatar}</div>
         </div>
-        <div style={{ position: "relative", display: "grid", gap: 10, justifyItems: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-            {event.tags?.slice(0, 2).map((tag) => (
-              <span key={tag} style={{ padding: "6px 10px", borderRadius: 999, background: "#f6f1e8", fontSize: 10, color: "#6b7280" }}>{tag}</span>
-            ))}
+        <div style={{ position: "relative", width: "100%", display: "grid", gap: 10, justifyItems: "center" }}>
+          <div style={{ position: "relative", width: "100%", minHeight: 54, display: "grid", placeItems: "center" }}>
+            <motion.div style={{ opacity: leftOpacity, y: leftLift, scale: leftScale, position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center", color: "#0f766e", fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.01em", fontFamily: '"Iowan Old Style", "Georgia", serif' }}>
+              {event.left.label}
+            </motion.div>
+            <motion.div style={{ opacity: rightOpacity, y: rightLift, scale: rightScale, position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center", color: "#be123c", fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.01em", fontFamily: '"Iowan Old Style", "Georgia", serif' }}>
+              {event.right.label}
+            </motion.div>
           </div>
           <div style={{ fontSize: 11, color: "#9ca3af", letterSpacing: "0.18em", textTransform: "uppercase" }}>左右滑动选择</div>
         </div>
@@ -867,17 +955,16 @@ function SwipeCard({ event, meta, onChoose }) {
 function OutcomeCard({ outcome, onContinue }) {
   return (
     <div style={{ width: "100%", maxWidth: 340, display: "grid", justifyItems: "center", gap: 14 }}>
-      <div style={{ width: 268, minHeight: 250, borderRadius: 32, background: "#fffdf8", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 18px 50px rgba(0,0,0,0.12)", padding: 28, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden" }}>
+      <div style={{ width: "min(100%, 268px)", minHeight: "clamp(220px, 30vh, 250px)", borderRadius: 32, background: "#fffdf8", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 18px 50px rgba(0,0,0,0.12)", padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top, rgba(245,231,215,0.8), transparent 44%)" }} />
         <div style={{ position: "relative", display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={alertMetaStyle}>结果</span>
           <span style={eventMetaStyle}>{outcome.choiceLabel}</span>
         </div>
         <div style={{ position: "relative", display: "grid", justifyItems: "center", gap: 12 }}>
-          <div style={{ fontSize: 92, lineHeight: 1 }}>{outcome.avatar}</div>
-          <div style={{ width: 64, height: 1, background: "rgba(159,107,79,0.35)" }} />
+          <div style={{ fontSize: "clamp(72px, 11vh, 92px)", lineHeight: 1 }}>{outcome.avatar}</div>
         </div>
-        <button onClick={onContinue} style={{ ...primaryBtnStyle, marginTop: 0, width: "100%" }}>继续</button>
+        <div style={{ height: 12 }} />
       </div>
     </div>
   );
@@ -899,8 +986,6 @@ function App() {
   const currentEvent = useMemo(() => chooseEvent(state), [state]);
   const annualSummary = useMemo(() => buildQuarterSummary(state), [state]);
   const persona = useMemo(() => choosePersona(state), [state]);
-  const pressure = useMemo(() => pressureSnapshot(state), [state]);
-  const currentPhaseLabel = useMemo(() => phaseLabel(state.round), [state.round]);
   const currentSpeech = useMemo(() => currentEvent.priority ? chainSpeech(currentEvent, state) : eventSpeech(currentEvent), [currentEvent, state]);
   const latestOutcome = state.memory.latestOutcome;
   const theme = useMemo(() => sceneTheme(state.screen, currentEvent), [state.screen, currentEvent]);
@@ -926,8 +1011,29 @@ function App() {
     prevSceneRef.current = { screen: state.screen, eventId: currentEvent?.id ?? null };
   }, [state.screen, currentEvent, soundOn]);
 
+  useEffect(() => {
+    if (state.screen !== "result" || !latestOutcome) return undefined;
+    const timer = window.setTimeout(() => {
+      setState((s) => {
+        const pending = s.memory.pendingTransition;
+        if (!pending) return { ...s, screen: "event" };
+        return {
+          ...s,
+          ...("year" in pending ? { year: pending.year } : {}),
+          ...("ending" in pending ? { ending: pending.ending } : {}),
+          ...("ended" in pending ? { ended: pending.ended } : {}),
+          screen: pending.screen,
+          memory: {
+            ...s.memory,
+            pendingTransition: null,
+          },
+        };
+      });
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [state.screen, latestOutcome]);
+
   const restart = () => setState(scenarioToState());
-  const reshuffleStart = () => setState(scenarioToState());
 
   const advance = (nextState) => {
     const ending = pickEnding(nextState);
@@ -986,11 +1092,14 @@ function App() {
     const choice = currentEvent[side];
     playUiSound(audioRef, side === "left" ? "swipeLeft" : "swipeRight", soundOn);
     const routeId = findRouteId({ eventId: currentEvent.id, flags: choice.flags || [] });
+    const scaledEffect = scaleStatDelta(choice.effect, state.round);
+    const scaledHidden = scaleHiddenDelta(choice.hidden, state.round);
+    const scaledRelations = scaleRelationDelta(choice.relations, state.round);
     let next = {
       ...state,
-      ...applyDeltaBlock(state, choice.effect, STAT_KEYS),
-      hidden: applyDeltaBlock(state.hidden, choice.hidden, HIDDEN_KEYS),
-      relations: applyDeltaBlock(state.relations, choice.relations, RELATION_KEYS),
+      ...applyDeltaBlock(state, scaledEffect, STAT_KEYS),
+      hidden: applyDeltaBlock(state.hidden, scaledHidden, HIDDEN_KEYS),
+      relations: applyDeltaBlock(state.relations, scaledRelations, RELATION_KEYS),
       flags: Array.from(new Set([...state.flags, ...(choice.flags || [])])),
       usedIds: Array.from(new Set([...state.usedIds, currentEvent.id])),
       round: state.round + 1,
@@ -1062,8 +1171,8 @@ function App() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: theme.appBg, transition: "background 240ms ease" }}>
-      <div style={{ width: "100%", maxWidth: 430, aspectRatio: "9 / 16", background: theme.frameBg, borderRadius: 34, overflow: "hidden", border: theme.frameBorder, boxShadow: theme.frameShadow, display: "flex", flexDirection: "column", position: "relative", transition: "background 240ms ease, box-shadow 240ms ease" }}>
+    <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(8px, 2.8vw, 16px)", boxSizing: "border-box", background: theme.appBg, transition: "background 240ms ease" }}>
+      <div style={{ width: "min(100%, 430px)", height: "min(calc(100dvh - 16px), 860px)", maxHeight: "calc(100dvh - 16px)", minHeight: 0, boxSizing: "border-box", background: theme.frameBg, borderRadius: 34, overflow: "hidden", border: theme.frameBorder, boxShadow: theme.frameShadow, display: "flex", flexDirection: "column", position: "relative", transition: "background 240ms ease, box-shadow 240ms ease" }}>
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: theme.overlay }} />
 
         {producerVisible ? (
@@ -1077,88 +1186,46 @@ function App() {
             >
               <div style={producerBackdropStyle} />
               <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.7 }} style={{ position: "relative", display: "grid", justifyItems: "center", gap: 16 }}>
-                <div style={producerTagStyle}>荣誉出品</div>
                 <div style={producerTitleStyle}>鑫姐的财务圈</div>
-                <div style={producerRuleStyle} />
+                <div style={producerTagStyle}>荣誉出品</div>
               </motion.div>
             </motion.div>
           </AnimatePresence>
         ) : (
           <>
 
-        <div style={{ position: "relative", padding: 16, borderBottom: "1px solid rgba(0,0,0,0.05)", background: theme.headerGlow }}>
+        <div style={{ position: "relative", padding: "12px clamp(12px, 3vw, 16px)", borderBottom: "1px solid rgba(0,0,0,0.05)", background: theme.headerGlow, flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "#9f6b4f" }}>财权 · Round {state.round}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>你能活多久？</div>
-              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{state.scenario.label}</div>
-            </div>
+            <div />
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setSoundOn((value) => !value)} style={iconBtnStyle} title={soundOn ? "关闭音效" : "开启音效"}>{soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}</button>
-              <button onClick={reshuffleStart} style={iconBtnStyle} title="随机新开局"><Sparkles size={16} /></button>
-              <button onClick={restart} style={iconBtnStyle} title="重开"><RotateCcw size={16} /></button>
+              <button onClick={restart} style={iconBtnStyle} title="随机重开"><RotateCcw size={16} /></button>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {STAT_KEYS.map((key) => <ProgressBar key={key} label={statLabel(key)} value={state[key]} />)}
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <div style={{ ...surfaceStatusPillStyle, flex: 1 }}>
-              <span style={statusLabelStyle}>阶段</span>
-              <strong>{currentPhaseLabel}</strong>
-            </div>
-            <div style={{ ...surfaceStatusPillStyle, flex: 1 }}>
-              <span style={statusLabelStyle}>当前压力</span>
-              <strong>{pressure.label}</strong>
-            </div>
-          </div>
         </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, position: "relative" }}>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px clamp(12px, 3vw, 16px)", position: "relative", overflowY: "auto", overflowX: "hidden" }}>
             <AnimatePresence mode="wait">
-              {state.screen === "intro" && (
-                <motion.div key="intro" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={surfacePanelStyle}>
-                  <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9f6b4f" }}>随机开局</div>
-                  <h2 style={titleStyle}>{state.scenario.label}</h2>
-                  <p style={descStyle}>{state.scenario.intro}</p>
-                  <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                    {Object.entries(state.hidden).slice(0, 4).map(([key, value]) => (
-                      <div key={key} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#4b5563" }}>
-                        <span>{hiddenLabel(key)}</span>
-                        <strong style={{ color: "#111827" }}>{value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => setState((s) => ({ ...s, screen: "event" }))} style={primaryBtnStyle}>进入公司</button>
-                </motion.div>
-              )}
-
               {state.screen === "event" && (
                 <motion.div key={`event_${state.round}_${currentEvent.id}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ width: "100%", display: "grid", justifyItems: "center", gap: 14 }}>
-                  <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={eventMetaStyle}>{currentPhaseLabel}</span>
-                      <span style={currentEvent.priority ? alertMetaStyle : eventMetaStyle}>{currentEvent.priority ? "连锁事件" : "经营事件"}</span>
-                      <span style={eventMetaStyle}>{currentEvent.role}</span>
-                    </div>
-                    {currentSpeech.cause && <div style={speechCauseStyle}>{currentSpeech.cause}</div>}
-                    {currentSpeech.trail && <div style={speechTrailStyle}>{currentSpeech.trail}</div>}
+                  <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10, marginTop: -40 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9f6b4f", marginBottom: 10 }}>入职第 {state.round} 个月</div>
                     <div style={speechRoleStyle}>{currentSpeech.speaker}</div>
                     <div style={speechQuoteStyle}>{currentSpeech.quote}</div>
                     <p style={speechDescStyle}>{currentSpeech.followup}</p>
                   </div>
-                  <SwipeCard event={currentEvent} meta={{ phase: currentPhaseLabel, pendingEffects: state.memory.scheduledEffects.length }} onChoose={applyChoice} />
+                  <SwipeCard event={currentEvent} onChoose={applyChoice} />
                 </motion.div>
               )}
 
               {state.screen === "result" && latestOutcome && (
                 <motion.div key={`result_${state.round}_${latestOutcome.choiceLabel}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ width: "100%", display: "grid", justifyItems: "center", gap: 14 }}>
-                  <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={alertMetaStyle}>结果反馈</span>
-                      <span style={eventMetaStyle}>{latestOutcome.role}</span>
-                    </div>
+                  <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10, marginTop: -40 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9f6b4f", marginBottom: 10 }}>入职第 {Math.max(1, state.round - 1)} 个月</div>
                     <div style={speechRoleStyle}>{latestOutcome.speaker}</div>
                     <div style={speechQuoteStyle}>{latestOutcome.quote}</div>
                     <p style={speechDescStyle}>{latestOutcome.followup}</p>
@@ -1210,37 +1277,18 @@ function App() {
             </AnimatePresence>
           </div>
 
-          <div style={{ padding: "0 16px 16px", display: "grid", gap: 10 }}>
-            <div style={surfaceBoxStyle}>
-              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.16em", color: "#6b7280", marginBottom: 8 }}>关键隐性变量</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {["marginHealth", "executionDebt", "orgFatigue", "customerTrust"].map((key) => (
-                  <div key={key} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                    <span style={{ color: "#4b5563" }}>{hiddenLabel(key)}</span>
-                    <strong>{state.hidden[key]}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {state.memory.delayedNotes.length > 0 && state.screen !== "ending" && (
+          <div style={{ padding: "0 clamp(12px, 3vw, 16px) clamp(12px, 3vw, 16px)", display: "grid", gap: 10, flexShrink: 0 }}>
+            {SHOW_DEBUG_INSIGHTS && (
               <div style={surfaceBoxStyle}>
-                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.16em", color: "#6b7280", marginBottom: 8 }}>最近后果</div>
-                {state.memory.delayedNotes.map((n, idx) => (
-                  <div key={`${n.title}_${idx}`} style={{ padding: "10px 12px", borderRadius: 14, background: "#fbf7ef", marginTop: idx === 0 ? 0 : 8 }}>
-                    {n.sourceTitle && (
-                      <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9f6b4f" }}>
-                        来自第 {n.sourceRound} 轮 · {n.sourceTitle}{n.sourceChoiceLabel ? ` · 你选了「${n.sourceChoiceLabel}」` : ""}
-                      </div>
-                    )}
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2937" }}>{n.title}</div>
-                    {n.routeId && (
-                      <div style={{ marginTop: 4, fontSize: 11, lineHeight: 1.5, color: "#8a5d45" }}>
-                        {routeTrailText(n.routeId, [{ routeId: n.routeId, title: n.sourceTitle, choiceLabel: n.sourceChoiceLabel }], n.title)}
-                      </div>
-                    )}
-                    <div style={{ marginTop: 4, fontSize: 12, lineHeight: 1.55, color: "#6b7280" }}>{n.desc}</div>
-                  </div>
-                ))}
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.16em", color: "#6b7280", marginBottom: 8 }}>经营暗线</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {["marginHealth", "executionDebt", "orgFatigue", "customerTrust"].map((key) => (
+                    <div key={key} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                      <span style={{ color: "#4b5563" }}>{hiddenLabel(key)}</span>
+                      <strong>{state.hidden[key]}</strong>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -1253,20 +1301,22 @@ function App() {
 }
 
 const panelStyle = {
-  width: 316,
-  minHeight: 428,
+  width: "min(100%, 316px)",
+  minHeight: 0,
+  maxHeight: "100%",
   borderRadius: 32,
   background: "#fffdf8",
   border: "1px solid rgba(0,0,0,0.05)",
   boxShadow: "0 18px 50px rgba(0,0,0,0.12)",
-  padding: 28,
+  padding: "clamp(22px, 4vw, 28px)",
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
   textAlign: "center",
+  overflowY: "auto",
 };
-const titleStyle = { fontSize: 28, lineHeight: 1.2, margin: "8px 0 0", fontWeight: 900 };
-const descStyle = { marginTop: 16, fontSize: 15, lineHeight: 1.8, color: "#4b5563" };
+const titleStyle = { fontSize: "clamp(24px, 5.8vw, 28px)", lineHeight: 1.2, margin: "8px 0 0", fontWeight: 900 };
+const descStyle = { marginTop: 16, fontSize: "clamp(14px, 3.8vw, 15px)", lineHeight: 1.8, color: "#4b5563" };
 const boxedStyle = { background: "#f6f1e8", borderRadius: 20, padding: 14, textAlign: "left" };
 const miniCardStyle = { background: "#fbf7ef", borderRadius: 18, padding: 12, textAlign: "left" };
 const statusPillStyle = { background: "#fbf7ef", borderRadius: 16, padding: "10px 12px", display: "grid", gap: 3 };
@@ -1276,15 +1326,13 @@ const alertMetaStyle = { ...eventMetaStyle, background: "#fff1f2", color: "#be12
 const speechCauseStyle = { justifySelf: "center", maxWidth: 336, padding: "8px 12px", borderRadius: 16, background: "#fbf7ef", border: "1px solid rgba(159,107,79,0.14)", fontSize: 12, lineHeight: 1.55, color: "#8a5d45", fontFamily: '"Iowan Old Style", "Georgia", serif' };
 const speechTrailStyle = { justifySelf: "center", maxWidth: 336, fontSize: 11, lineHeight: 1.55, color: "#9f6b4f", letterSpacing: "0.02em", fontFamily: '"Iowan Old Style", "Georgia", serif' };
 const speechRoleStyle = { fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9f6b4f" };
-const speechQuoteStyle = { fontSize: 30, lineHeight: 1.24, fontWeight: 900, color: "#111827", textWrap: "balance", fontFamily: '"Iowan Old Style", "Georgia", serif' };
-const speechDescStyle = { margin: 0, fontSize: 16, lineHeight: 1.75, color: "#4b5563", maxWidth: 330, fontFamily: '"Iowan Old Style", "Georgia", serif' };
+const speechQuoteStyle = { fontSize: "clamp(24px, 6vw, 30px)", lineHeight: 1.24, fontWeight: 900, color: "#111827", textWrap: "balance", fontFamily: '"Iowan Old Style", "Georgia", serif' };
+const speechDescStyle = { margin: 0, fontSize: "clamp(14px, 4vw, 16px)", lineHeight: 1.75, color: "#4b5563", maxWidth: 330, fontFamily: '"Iowan Old Style", "Georgia", serif' };
 const primaryBtnStyle = { marginTop: 16, height: 52, border: 0, borderRadius: 22, background: "#111827", color: "white", fontWeight: 800, cursor: "pointer" };
 const secondaryBtnStyle = { height: 46, border: "1px solid rgba(0,0,0,0.08)", borderRadius: 18, background: "white", color: "#111827", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
 const iconBtnStyle = { width: 36, height: 36, borderRadius: 999, border: "1px solid rgba(0,0,0,0.06)", background: "white", display: "grid", placeItems: "center", cursor: "pointer" };
 const producerSplashStyle = { position: "relative", flex: 1, display: "grid", placeItems: "center", overflow: "hidden", background: "linear-gradient(180deg, #f7efe2 0%, #ecdcc8 54%, #e4d6cb 100%)" };
 const producerBackdropStyle = { position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 28%, rgba(255,255,255,0.9), transparent 30%), radial-gradient(circle at 50% 78%, rgba(170,122,84,0.16), transparent 38%)" };
 const producerTagStyle = { padding: "8px 14px", borderRadius: 999, background: "rgba(255,250,244,0.72)", border: "1px solid rgba(159,107,79,0.16)", fontSize: 12, color: "#9f6b4f", letterSpacing: "0.24em", textTransform: "uppercase" };
-const producerTitleStyle = { fontSize: 40, lineHeight: 1.15, fontWeight: 900, color: "#2f241e", letterSpacing: "0.08em", textAlign: "center", fontFamily: '"Iowan Old Style", "Georgia", serif', textShadow: "0 1px 0 rgba(255,255,255,0.4)" };
-const producerRuleStyle = { width: 96, height: 1, background: "linear-gradient(90deg, transparent, rgba(159,107,79,0.55), transparent)" };
-
+const producerTitleStyle = { fontSize: "clamp(30px, 9vw, 40px)", lineHeight: 1.15, fontWeight: 900, color: "#2f241e", letterSpacing: "0.08em", textAlign: "center", fontFamily: '"Iowan Old Style", "Georgia", serif', textShadow: "0 1px 0 rgba(255,255,255,0.4)" };
 export default App;

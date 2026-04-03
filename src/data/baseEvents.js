@@ -6994,5 +6994,495 @@ export const baseEvents = [
       ],
       "schedule": []
     }
+  },
+  {
+    "id": "office_romance_rumor",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 5,
+    "role": "HRBP",
+    "avatar": "💘",
+    "title": "最近那对人走得太近，办公室已经开始有风声了。",
+    "desc": "HRBP不是来八卦的，她担心的是排班、汇报和利益边界一起乱掉。",
+    "tags": [
+      "团队",
+      "政治",
+      "风险"
+    ],
+    "pack": "政治",
+    "left": {
+      "label": "提前回避",
+      "effect": {
+        "team": 1,
+        "trust": -1
+      },
+      "hidden": {
+        "politicalHeat": -2,
+        "riskExposure": -1,
+        "orgFatigue": 1
+      },
+      "relations": {
+        "hr": 2,
+        "legal": 1,
+        "boss": -1
+      },
+      "flags": [
+        "office_romance_managed"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先别碰",
+      "effect": {
+        "trust": 1,
+        "team": -2,
+        "cash": 1
+      },
+      "hidden": {
+        "politicalHeat": 5,
+        "riskExposure": 3
+      },
+      "relations": {
+        "hr": -2,
+        "legal": -1
+      },
+      "flags": [
+        "office_romance_ignored"
+      ],
+      "schedule": [
+        {
+          "after": 3,
+          "type": "office_romance_escalates"
+        }
+      ]
+    }
+  },
+  {
+    "id": "supplier_private_dinner",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 5,
+    "role": "采购经理",
+    "avatar": "🍷",
+    "title": "这个供应商今晚想单独请我吃饭。",
+    "desc": "采购经理说得轻描淡写，但你知道这种局最麻烦的从来不是饭。",
+    "tags": [
+      "风险",
+      "政治",
+      "库存"
+    ],
+    "pack": "政治",
+    "left": {
+      "label": "要求回避",
+      "effect": {
+        "trust": -1,
+        "cash": -1
+      },
+      "hidden": {
+        "riskExposure": -3,
+        "politicalHeat": -1
+      },
+      "relations": {
+        "legal": 2,
+        "ops": 1,
+        "boss": -1
+      },
+      "flags": [
+        "vendor_distance"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先去看看",
+      "effect": {
+        "cash": 2,
+        "trust": -2
+      },
+      "hidden": {
+        "riskExposure": 4,
+        "politicalHeat": 3
+      },
+      "relations": {
+        "ops": -1,
+        "legal": -2
+      },
+      "flags": [
+        "vendor_dinner"
+      ],
+      "schedule": [
+        {
+          "after": 2,
+          "type": "vendor_dinner_photo"
+        }
+      ]
+    }
+  },
+  {
+    "id": "promotion_shortlist",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 6,
+    "role": "HRBP",
+    "avatar": "📋",
+    "title": "晋升名单还没定，风已经先吹出去了。",
+    "desc": "名单一旦带着风声落地，后面就不再只是升谁的问题了。",
+    "tags": [
+      "团队",
+      "政治"
+    ],
+    "pack": "组织",
+    "left": {
+      "label": "公开竞聘",
+      "effect": {
+        "team": 2,
+        "trust": -1,
+        "cash": -2
+      },
+      "hidden": {
+        "politicalHeat": -2,
+        "orgFatigue": 1
+      },
+      "relations": {
+        "hr": 2,
+        "boss": -1
+      },
+      "flags": [
+        "promotion_open"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先内定",
+      "effect": {
+        "trust": 2,
+        "team": -3
+      },
+      "hidden": {
+        "politicalHeat": 5,
+        "bossDependency": 2
+      },
+      "relations": {
+        "boss": 1,
+        "hr": -2
+      },
+      "flags": [
+        "promotion_rigged"
+      ],
+      "schedule": [
+        {
+          "after": 3,
+          "type": "promotion_grievance"
+        }
+      ]
+    }
+  },
+  {
+    "id": "founder_relative_hire",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 5,
+    "role": "老板助理",
+    "avatar": "👥",
+    "title": "老板想把一个亲戚先塞进关键岗试试。",
+    "desc": "理由很好听，说是先帮忙顶一阵，但你知道岗位不是借椅子。",
+    "tags": [
+      "老板",
+      "政治",
+      "风险"
+    ],
+    "pack": "老板",
+    "left": {
+      "label": "走正常流程",
+      "effect": {
+        "trust": -2,
+        "team": 1
+      },
+      "hidden": {
+        "riskExposure": -1,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "hr": 2,
+        "boss": -2
+      },
+      "flags": [
+        "block_referral"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先放进来",
+      "effect": {
+        "trust": 2,
+        "cash": 1,
+        "team": -2
+      },
+      "hidden": {
+        "politicalHeat": 4,
+        "riskExposure": 4,
+        "bossDependency": 3
+      },
+      "relations": {
+        "boss": 2,
+        "hr": -2
+      },
+      "flags": [
+        "nepotism_hire"
+      ],
+      "schedule": [
+        {
+          "after": 3,
+          "type": "referral_backfire"
+        }
+      ]
+    }
+  },
+  {
+    "id": "clique_lunch",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 5,
+    "role": "中台经理",
+    "avatar": "🍱",
+    "title": "最近总有几个人单独吃饭，项目也只在小圈子里过。",
+    "desc": "你还没看到公开冲突，但流程已经开始绕着几个人走了。",
+    "tags": [
+      "团队",
+      "政治"
+    ],
+    "pack": "组织",
+    "left": {
+      "label": "拆开分工",
+      "effect": {
+        "team": 1,
+        "trust": -1
+      },
+      "hidden": {
+        "politicalHeat": -1,
+        "executionDebt": 1
+      },
+      "relations": {
+        "hr": 1,
+        "sales": -1
+      },
+      "flags": [
+        "clique_broken"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先别碰",
+      "effect": {
+        "cash": 1,
+        "team": -2
+      },
+      "hidden": {
+        "politicalHeat": 4,
+        "orgFatigue": 2
+      },
+      "relations": {
+        "sales": -1,
+        "hr": -1
+      },
+      "flags": [
+        "clique_tolerated"
+      ],
+      "schedule": [
+        {
+          "after": 2,
+          "type": "clique_backlash"
+        }
+      ]
+    }
+  },
+  {
+    "id": "assistant_overreach",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 5,
+    "role": "老板助理",
+    "avatar": "📲",
+    "title": "老板没说的话，助理先替他答应出去了。",
+    "desc": "问题不只是答应了什么，而是以后谁都不知道边界到底在哪。",
+    "tags": [
+      "老板",
+      "政治"
+    ],
+    "pack": "老板",
+    "left": {
+      "label": "当场收回",
+      "effect": {
+        "trust": -2,
+        "team": 1
+      },
+      "hidden": {
+        "bossDependency": -2,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "boss": -1,
+        "finance": 2
+      },
+      "flags": [
+        "boundary_claimed"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先接下来",
+      "effect": {
+        "trust": 2,
+        "cash": -2
+      },
+      "hidden": {
+        "bossDependency": 4,
+        "executionDebt": 2
+      },
+      "relations": {
+        "boss": 1,
+        "finance": -2
+      },
+      "flags": [
+        "assistant_override"
+      ],
+      "schedule": [
+        {
+          "after": 2,
+          "type": "assistant_overreach_cost"
+        }
+      ]
+    }
+  },
+  {
+    "id": "private_chat_leak",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 4,
+    "role": "财务BP",
+    "avatar": "💬",
+    "title": "你私下说的那句抱怨，今天已经传到业务那边了。",
+    "desc": "话不算重，但从私下走到公开以后，性质就变了。",
+    "tags": [
+      "政治",
+      "团队"
+    ],
+    "pack": "政治",
+    "left": {
+      "label": "当面说清",
+      "effect": {
+        "trust": 1,
+        "team": -1
+      },
+      "hidden": {
+        "politicalHeat": -1
+      },
+      "relations": {
+        "sales": 1,
+        "boss": -1
+      },
+      "flags": [
+        "direct_clarify"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先装没事",
+      "effect": {
+        "trust": -2,
+        "team": -2
+      },
+      "hidden": {
+        "politicalHeat": 4
+      },
+      "relations": {
+        "sales": -2,
+        "boss": -1
+      },
+      "flags": [
+        "private_chat_leak"
+      ],
+      "schedule": [
+        {
+          "after": 2,
+          "type": "gossip_spread"
+        }
+      ]
+    }
+  },
+  {
+    "id": "expense_favor_request",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 5,
+    "role": "销售经理",
+    "avatar": "🫱‍🫲",
+    "title": "有人来问，能不能给“自己人”的费用先过。",
+    "desc": "金额不大，真正大的问题是这口子一旦开了，就很难只开一次。",
+    "tags": [
+      "政治",
+      "风险",
+      "老板"
+    ],
+    "pack": "政治",
+    "left": {
+      "label": "按流程卡住",
+      "effect": {
+        "cash": 1,
+        "trust": -1
+      },
+      "hidden": {
+        "riskExposure": -2,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "finance": 2,
+        "sales": -2
+      },
+      "flags": [
+        "expense_gate"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先帮一次",
+      "effect": {
+        "cash": -2,
+        "trust": 2
+      },
+      "hidden": {
+        "riskExposure": 4,
+        "bossDependency": 2,
+        "politicalHeat": 3
+      },
+      "relations": {
+        "sales": 1,
+        "finance": -2
+      },
+      "flags": [
+        "favor_pass"
+      ],
+      "schedule": [
+        {
+          "after": 3,
+          "type": "favor_receipt"
+        }
+      ]
+    }
   }
 ];

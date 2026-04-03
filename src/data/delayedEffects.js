@@ -821,5 +821,131 @@ export const delayedEffects = {
       "boss": -1,
       "sales": -1
     }
+  },
+  "office_romance_escalates": {
+    "title": "办公室风声传成了队形",
+    "desc": "你没处理的关系，开始挤占排班、汇报和大家的注意力。",
+    "effect": {
+      "team": -4,
+      "trust": -1
+    },
+    "hidden": {
+      "politicalHeat": 5,
+      "riskExposure": 3
+    },
+    "relations": {
+      "hr": -2,
+      "legal": -1
+    }
+  },
+  "vendor_dinner_photo": {
+    "title": "饭局照片被人看见了",
+    "desc": "事情未必真的违规，但解释成本已经自己长出来了。",
+    "effect": {
+      "trust": -2
+    },
+    "hidden": {
+      "riskExposure": 5,
+      "politicalHeat": 3
+    },
+    "relations": {
+      "ops": -1,
+      "legal": -2
+    }
+  },
+  "promotion_grievance": {
+    "title": "没上的人开始有意见",
+    "desc": "名单落地以后，真正难处理的是落空那几个人的情绪。",
+    "effect": {
+      "team": -4,
+      "trust": -1
+    },
+    "hidden": {
+      "politicalHeat": 5,
+      "orgFatigue": 2
+    },
+    "relations": {
+      "hr": -2,
+      "boss": -1
+    }
+  },
+  "referral_backfire": {
+    "title": "那个熟人开始被拿来做文章",
+    "desc": "能力先不说，组织已经默认这不是一个干净的安排。",
+    "effect": {
+      "team": -3,
+      "trust": -2
+    },
+    "hidden": {
+      "riskExposure": 5,
+      "politicalHeat": 4
+    },
+    "relations": {
+      "hr": -2,
+      "boss": -1
+    }
+  },
+  "clique_backlash": {
+    "title": "小圈子开始影响合作",
+    "desc": "消息先在几个人之间转，后面所有人都要为这个效率买单。",
+    "effect": {
+      "team": -3
+    },
+    "hidden": {
+      "politicalHeat": 4,
+      "executionDebt": 3
+    },
+    "relations": {
+      "sales": -1,
+      "hr": -1
+    }
+  },
+  "assistant_overreach_cost": {
+    "title": "助理答应出去的事开始回来找你",
+    "desc": "前面省下的沟通时间，后面会用更多返工一点点还回来。",
+    "effect": {
+      "cash": -4,
+      "trust": -2
+    },
+    "hidden": {
+      "bossDependency": 4,
+      "executionDebt": 3
+    },
+    "relations": {
+      "boss": -1,
+      "finance": -1
+    }
+  },
+  "gossip_spread": {
+    "title": "那句私话已经变成版本了",
+    "desc": "你原本只是发牢骚，别人听到的却是你真正站在哪边。",
+    "effect": {
+      "team": -3,
+      "trust": -2
+    },
+    "hidden": {
+      "politicalHeat": 4
+    },
+    "relations": {
+      "sales": -2,
+      "boss": -1
+    }
+  },
+  "favor_receipt": {
+    "title": "那次通融被记成默认",
+    "desc": "你以为只是帮一次，别人已经当成以后都能这么走。",
+    "effect": {
+      "cash": -3,
+      "trust": -2
+    },
+    "hidden": {
+      "riskExposure": 4,
+      "bossDependency": 2,
+      "politicalHeat": 3
+    },
+    "relations": {
+      "finance": -2,
+      "sales": 1
+    }
   }
 };

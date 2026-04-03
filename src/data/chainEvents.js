@@ -2024,5 +2024,244 @@ export const chainEvents = [
       ],
       "schedule": []
     }
+  },
+  {
+    "id": "office_romance_flashpoint",
+    "priority": 8,
+    "role": "HRBP",
+    "avatar": "🫢",
+    "title": "办公室那点事，已经不是私事了。",
+    "desc": "汇报线、排班和评价都开始被人往那层关系上想。",
+    "conditions": {
+      "allFlags": [
+        "office_romance_ignored"
+      ],
+      "hiddenMin": {
+        "politicalHeat": 34
+      }
+    },
+    "left": {
+      "label": "调岗回避",
+      "effect": {
+        "team": 2,
+        "trust": -1
+      },
+      "hidden": {
+        "politicalHeat": -4,
+        "riskExposure": -2
+      },
+      "relations": {
+        "hr": 2,
+        "legal": 1
+      },
+      "flags": [
+        "romance_contained"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续压着",
+      "effect": {
+        "trust": 2,
+        "team": -4
+      },
+      "hidden": {
+        "politicalHeat": 6,
+        "riskExposure": 5
+      },
+      "relations": {
+        "hr": -2,
+        "legal": -2
+      },
+      "flags": [
+        "romance_buried"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "promotion_revolt",
+    "priority": 8,
+    "role": "HRBP",
+    "avatar": "📣",
+    "title": "名单一发，下面就开始说这事早定好了。",
+    "desc": "现在已经不只是没升上去的人不服，旁边的人也开始重新判断规则。",
+    "conditions": {
+      "allFlags": [
+        "promotion_rigged"
+      ],
+      "hiddenMin": {
+        "politicalHeat": 34
+      }
+    },
+    "left": {
+      "label": "重开评审",
+      "effect": {
+        "team": 3,
+        "trust": -2
+      },
+      "hidden": {
+        "politicalHeat": -3,
+        "bossDependency": -1
+      },
+      "relations": {
+        "hr": 2,
+        "boss": -1
+      },
+      "flags": [
+        "rerun_promo"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "硬压过去",
+      "effect": {
+        "trust": 2,
+        "team": -5
+      },
+      "hidden": {
+        "politicalHeat": 6,
+        "orgFatigue": 3
+      },
+      "relations": {
+        "boss": 1,
+        "hr": -2
+      },
+      "flags": [
+        "force_promo"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "nepotism_probe",
+    "priority": 8,
+    "role": "法务经理",
+    "avatar": "🧾",
+    "title": "有人开始问，这几笔安排是不是都太“巧”了。",
+    "desc": "一旦有人把熟人、费用和供应商放到一张纸上，事情就不会再按人情走。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "nepotism_hire"
+          ]
+        },
+        {
+          "allFlags": [
+            "favor_pass"
+          ]
+        },
+        {
+          "allFlags": [
+            "vendor_dinner"
+          ]
+        }
+      ],
+      "hiddenMin": {
+        "riskExposure": 34
+      }
+    },
+    "left": {
+      "label": "立刻自查",
+      "effect": {
+        "cash": -3,
+        "trust": -1
+      },
+      "hidden": {
+        "riskExposure": -5,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "legal": 2,
+        "finance": 1
+      },
+      "flags": [
+        "self_audit"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先压消息",
+      "effect": {
+        "trust": 2,
+        "cash": 1
+      },
+      "hidden": {
+        "riskExposure": 6,
+        "politicalHeat": 5
+      },
+      "relations": {
+        "legal": -2,
+        "boss": 1
+      },
+      "flags": [
+        "bury_probe"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "clique_split",
+    "priority": 7,
+    "role": "中台经理",
+    "avatar": "🧩",
+    "title": "那个小圈子已经不是抱团，是开始左右资源了。",
+    "desc": "项目分配、信息流向和谁先知道，都被几个人悄悄改了顺序。",
+    "conditions": {
+      "allFlags": [
+        "clique_tolerated"
+      ],
+      "alternatives": [
+        {
+          "hiddenMin": {
+            "orgFatigue": 34
+          }
+        },
+        {
+          "hiddenMin": {
+            "politicalHeat": 32
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "拆组重排",
+      "effect": {
+        "team": 2,
+        "cash": -4
+      },
+      "hidden": {
+        "politicalHeat": -2,
+        "executionDebt": 1
+      },
+      "relations": {
+        "hr": 1,
+        "sales": -1
+      },
+      "flags": [
+        "clique_reset"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续放着",
+      "effect": {
+        "growth": -3,
+        "team": -4
+      },
+      "hidden": {
+        "politicalHeat": 5,
+        "orgFatigue": 3
+      },
+      "relations": {
+        "sales": -2,
+        "hr": -1
+      },
+      "flags": [
+        "clique_harden"
+      ],
+      "schedule": []
+    }
   }
 ];

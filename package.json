@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "mobile": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:mobile": "vite preview --host"
   },
   "dependencies": {
     "framer-motion": "^11.3.19",
