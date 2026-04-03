@@ -1016,11 +1016,8 @@ function SwipeCard({ event, onChoose }) {
         style={{ x, rotate, zIndex: 2, width: "min(100%, 268px)", minHeight: "clamp(268px, 38vh, 320px)", borderRadius: 32, background: chainTone.background, border: chainTone.border, boxShadow: chainTone.boxShadow, padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", cursor: "grab" }}
       >
         <div style={{ position: "absolute", inset: 0, background: chainTone.halo }} />
-        <div style={{ position: "relative", display: "grid", justifyItems: "center", gap: 12 }}>
-          <div style={{ fontSize: "clamp(84px, 12.5vh, 108px)", lineHeight: 1 }}>{event.avatar}</div>
-        </div>
-        <div style={{ position: "relative", width: "100%", display: "grid", gap: 10, justifyItems: "center" }}>
-          <div style={{ position: "relative", width: "100%", minHeight: 54, display: "grid", placeItems: "center" }}>
+        <div style={{ position: "relative", width: "100%", display: "grid", gap: 16, justifyItems: "center", flex: 1 }}>
+          <div style={{ position: "relative", width: "100%", minHeight: 64, display: "grid", placeItems: "center", marginTop: 6 }}>
             <motion.div style={{ opacity: leftOpacity, y: leftLift, scale: leftScale, position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center", color: "#0f766e", fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.01em", fontFamily: '"Iowan Old Style", "Georgia", serif' }}>
               {event.left.label}
             </motion.div>
@@ -1028,6 +1025,11 @@ function SwipeCard({ event, onChoose }) {
               {event.right.label}
             </motion.div>
           </div>
+          <div style={{ position: "relative", display: "grid", justifyItems: "center", alignSelf: "end", marginTop: "auto", paddingBottom: 8 }}>
+            <div style={{ fontSize: "clamp(84px, 12.5vh, 108px)", lineHeight: 1 }}>{event.avatar}</div>
+          </div>
+        </div>
+        <div style={{ position: "relative", width: "100%", display: "grid", gap: 10, justifyItems: "center" }}>
           <div style={{ fontSize: 11, color: "#9ca3af", letterSpacing: "0.18em", textTransform: "uppercase" }}>左右滑动选择</div>
         </div>
       </motion.div>
@@ -1035,7 +1037,7 @@ function SwipeCard({ event, onChoose }) {
   );
 }
 
-function OutcomeCard({ outcome, onContinue }) {
+function OutcomeCard({ outcome }) {
   return (
     <div style={{ width: "100%", maxWidth: 340, display: "grid", justifyItems: "center", gap: 14 }}>
       <div style={{ width: "min(100%, 268px)", minHeight: "clamp(220px, 30vh, 250px)", borderRadius: 32, background: "#fffdf8", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 18px 50px rgba(0,0,0,0.12)", padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden" }}>
@@ -1049,6 +1051,7 @@ function OutcomeCard({ outcome, onContinue }) {
         </div>
         <div style={{ height: 12 }} />
       </div>
+      <div style={{ fontSize: 11, color: "#9ca3af", letterSpacing: "0.08em" }}>点击任意位置进入下一题</div>
     </div>
   );
 }
@@ -1135,28 +1138,6 @@ function App() {
     if (state.screen === "ending" && previous.screen !== "ending") playUiSound(audioRef, "ending", soundOn);
     prevSceneRef.current = { screen: state.screen, eventId: currentEvent?.id ?? null };
   }, [state.screen, currentEvent, soundOn]);
-
-  useEffect(() => {
-    if (state.screen !== "result" || !latestOutcome) return undefined;
-    const timer = window.setTimeout(() => {
-      setState((s) => {
-        const pending = s.memory.pendingTransition;
-        if (!pending) return { ...s, screen: "event" };
-        return {
-          ...s,
-          ...("year" in pending ? { year: pending.year } : {}),
-          ...("ending" in pending ? { ending: pending.ending } : {}),
-          ...("ended" in pending ? { ended: pending.ended } : {}),
-          screen: pending.screen,
-          memory: {
-            ...s.memory,
-            pendingTransition: null,
-          },
-        };
-      });
-    }, 4000);
-    return () => window.clearTimeout(timer);
-  }, [state.screen, latestOutcome]);
 
   const restart = () => setState(scenarioToState());
   const startFromBriefing = (direction) => {
@@ -1364,13 +1345,20 @@ function App() {
               )}
 
               {state.screen === "result" && latestOutcome && (
-                <motion.div key={`result_${state.round}_${latestOutcome.choiceLabel}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ width: "100%", display: "grid", justifyItems: "center", gap: 14 }}>
+                <motion.div
+                  key={`result_${state.round}_${latestOutcome.choiceLabel}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  onClick={continueFromResult}
+                  style={{ width: "100%", display: "grid", justifyItems: "center", gap: 14, cursor: "pointer" }}
+                >
                   <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10 }}>
                     <div style={speechRoleStyle}>{latestOutcome.speaker}</div>
                     <div style={speechQuoteStyle}>{latestOutcome.quote}</div>
                     <p style={speechDescStyle}>{latestOutcome.followup}</p>
                   </div>
-                  <OutcomeCard outcome={latestOutcome} onContinue={continueFromResult} />
+                  <OutcomeCard outcome={latestOutcome} />
                 </motion.div>
               )}
 
