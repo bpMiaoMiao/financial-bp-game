@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { RotateCcw, Share2, Copy, Skull, Volume2, VolumeX } from "lucide-react";
+import { RotateCcw, Skull, Volume2, VolumeX } from "lucide-react";
 import { scenarios, initialRelations } from "./data/scenarios";
 import { baseEvents } from "./data/baseEvents";
 import { chainEvents } from "./data/chainEvents";
 import { delayedEffects } from "./data/delayedEffects";
+import { chainCauseHints, chainRouteConfigs, chainRoutePressure } from "./data/chainMeta";
 import { outcomeOverrides } from "./data/outcomeOverrides";
 import { personaDefs } from "./data/personaDefs";
 
@@ -293,6 +294,187 @@ function stablePlayProfile(state) {
   };
 }
 
+function bpBufferProfile(state) {
+  const directFlags = [
+    "go_explain",
+    "version_first",
+    "catch_between",
+    "explain_not_decide",
+    "default_receiver",
+    "seat_routine",
+    "normal_turnover",
+    "seat_cost",
+    "temporary_plug",
+    "be_buffer",
+  ];
+  const indirectFlags = [
+    "boss_temp_number",
+    "overnight_forecast",
+    "board_deck_polish",
+    "need_boss_backing",
+    "cross_line_approval",
+    "meeting_rewrite",
+    "assistant_overreach",
+    "private_chat_leak",
+    "budget_meeting_targeted",
+    "project_blame",
+    "speak_for_boss",
+    "business_pushes_blame",
+    "shadow_committee",
+    "middle_manager_blame",
+    "cross_team_conflict",
+    "weekend_overtime",
+  ];
+
+  const allFlags = state.flags || [];
+  const recentFlags = state.memory.recentFlags || [];
+  const directCount = directFlags.filter((flag) => allFlags.includes(flag)).length;
+  const indirectCount = indirectFlags.filter((flag) => allFlags.includes(flag)).length;
+  const recentDirect = directFlags.filter((flag) => recentFlags.includes(flag)).length;
+  const recentIndirect = indirectFlags.filter((flag) => recentFlags.includes(flag)).length;
+
+  let level = 0;
+  level += directCount * 1.35;
+  level += indirectCount * 0.35;
+  level += recentDirect * 0.9;
+  level += recentIndirect * 0.28;
+
+  if (state.hidden.bossDependency >= 36) level += 0.8;
+  if (state.hidden.bossDependency >= 48) level += 1;
+  if (state.hidden.politicalHeat >= 34) level += 0.7;
+  if (state.hidden.politicalHeat >= 46) level += 0.9;
+  if (state.hidden.orgFatigue >= 38) level += 0.55;
+  if (state.hidden.dataMaturity <= 34) level += 0.3;
+  if (state.round >= 5) level += 0.45;
+  if (state.round >= 8) level += 0.75;
+  if (state.round >= 11) level += 0.9;
+
+  return {
+    level,
+    directCount,
+    indirectCount,
+    recentDirect,
+    recentIndirect,
+  };
+}
+
+function hiddenRouteLevels(state) {
+  const lowBad = (value, [light, medium, heavy]) => {
+    if (value <= heavy) return 3;
+    if (value <= medium) return 2;
+    if (value <= light) return 1;
+    return 0;
+  };
+  const highBad = (value, [light, medium, heavy]) => {
+    if (value >= heavy) return 3;
+    if (value >= medium) return 2;
+    if (value >= light) return 1;
+    return 0;
+  };
+
+  return {
+    marginHealth: lowBad(state.hidden.marginHealth, [44, 36, 28]),
+    customerTrust: lowBad(state.hidden.customerTrust, [44, 36, 28]),
+    dataMaturity: lowBad(state.hidden.dataMaturity, [34, 28, 22]),
+    executionDebt: highBad(state.hidden.executionDebt, [30, 38, 48]),
+    orgFatigue: highBad(state.hidden.orgFatigue, [34, 42, 52]),
+    riskExposure: highBad(state.hidden.riskExposure, [34, 45, 58]),
+    bossDependency: highBad(state.hidden.bossDependency, [32, 42, 54]),
+    politicalHeat: highBad(state.hidden.politicalHeat, [32, 42, 54]),
+  };
+}
+
+function hiddenRouteWeight(event, state) {
+  if (!event.tags?.length) return 0;
+  const levels = hiddenRouteLevels(state);
+  let bonus = 0;
+
+  if (levels.marginHealth) {
+    if (event.tags.includes("利润质量")) bonus += 1.1 * levels.marginHealth;
+    if (event.tags.includes("客户")) bonus += 0.6 * levels.marginHealth;
+    if (levels.marginHealth >= 2 && event.tags.includes("增长")) bonus -= 0.7;
+  }
+
+  if (levels.customerTrust) {
+    if (event.tags.includes("客户")) bonus += 1.2 * levels.customerTrust;
+    if (event.tags.includes("风险")) bonus += 0.45 * levels.customerTrust;
+    if (levels.customerTrust >= 2 && event.tags.includes("增长")) bonus -= 0.45;
+  }
+
+  if (levels.dataMaturity) {
+    if (event.tags.includes("数据") || event.tags.includes("系统")) bonus += 1.15 * levels.dataMaturity;
+    if (event.tags.includes("执行")) bonus += 0.5 * levels.dataMaturity;
+  }
+
+  if (levels.executionDebt) {
+    if (event.tags.includes("执行")) bonus += 1.0 * levels.executionDebt;
+    if (event.tags.includes("数据") || event.tags.includes("系统")) bonus += 0.65 * levels.executionDebt;
+    if (levels.executionDebt >= 2 && event.tags.includes("政治")) bonus += 0.25 * levels.executionDebt;
+  }
+
+  if (levels.orgFatigue) {
+    if (event.tags.includes("团队")) bonus += 1.15 * levels.orgFatigue;
+    if (levels.orgFatigue >= 2 && event.tags.includes("老板")) bonus += 0.3 * levels.orgFatigue;
+  }
+
+  if (levels.riskExposure) {
+    if (event.tags.includes("风险") || event.tags.includes("合规")) bonus += 1.1 * levels.riskExposure;
+    if (event.tags.includes("政治")) bonus += 0.35 * levels.riskExposure;
+  }
+
+  if (levels.bossDependency) {
+    if (event.tags.includes("老板")) bonus += 1.15 * levels.bossDependency;
+    if (levels.bossDependency >= 2 && event.tags.includes("政治")) bonus += 0.35 * levels.bossDependency;
+  }
+
+  if (levels.politicalHeat) {
+    if (event.tags.includes("政治")) bonus += 1.2 * levels.politicalHeat;
+    if (event.tags.includes("团队")) bonus += 0.45 * levels.politicalHeat;
+  }
+
+  return bonus;
+}
+
+function bpBufferWeight(event, state) {
+  const profile = bpBufferProfile(state);
+  if (profile.level <= 0) return 0;
+
+  const isBufferBase = event.pack === "暗线";
+  const carriesBufferSubtext =
+    event.tags?.includes("老板") ||
+    event.tags?.includes("政治") ||
+    event.tags?.includes("团队") ||
+    event.tags?.includes("数据");
+
+  if (!isBufferBase && !carriesBufferSubtext) return 0;
+
+  let bonus = 0;
+  if (isBufferBase) {
+    if (state.round <= 2) bonus -= 2.4;
+    else if (state.round <= 4) bonus += Math.max(0.2, profile.level * 0.22);
+    else if (state.round <= 8) bonus += profile.level * 0.5;
+    else bonus += profile.level * 0.72;
+
+    if (event.id === "predecessor_where" || event.id === "temporary_patch_person") {
+      if (state.round < 8) bonus -= 1.6;
+      else bonus += 0.8;
+    }
+    if (event.id === "you_explain_again" || event.id === "everybody_sends_to_you") {
+      if (state.round >= 6) bonus += 0.8;
+    }
+    return bonus;
+  }
+
+  if (state.round < 5) return 0;
+  if (profile.level < 3) return 0;
+
+  if (event.tags?.includes("老板")) bonus += 0.16 * profile.level;
+  if (event.tags?.includes("政治")) bonus += 0.2 * profile.level;
+  if (event.tags?.includes("团队")) bonus += 0.12 * profile.level;
+  if (event.tags?.includes("数据")) bonus += 0.08 * profile.level;
+  return bonus;
+}
+
 function stabilityPressureWeight(event, state) {
   if (!event.tags?.length) return 0;
   const profile = stablePlayProfile(state);
@@ -323,17 +505,21 @@ function stabilityPressureWeight(event, state) {
 function balanceWeight(event, state) {
   let bonus = 0;
   if ((state.cash <= 40) && (event.tags?.includes("现金") || event.tags?.includes("库存"))) bonus += 2;
-  if ((state.team <= 45 || state.hidden.orgFatigue >= 40) && (event.tags?.includes("团队") || event.tags?.includes("执行"))) bonus += 2;
+  if ((state.team <= 45 || state.hidden.orgFatigue >= 40) && event.tags?.includes("团队")) bonus += 2;
+  if ((state.hidden.executionDebt >= 34) && (event.tags?.includes("执行") || event.tags?.includes("数据") || event.tags?.includes("系统"))) bonus += 1.8;
   if ((state.hidden.marginHealth <= 42) && event.tags?.includes("利润质量")) bonus += 2;
   if ((state.hidden.customerTrust <= 42) && event.tags?.includes("客户")) bonus += 2;
   if ((state.hidden.dataMaturity <= 28) && (event.tags?.includes("数据") || event.tags?.includes("系统"))) bonus += 1.5;
   if ((state.hidden.riskExposure >= 42) && (event.tags?.includes("风险") || event.tags?.includes("合规") || event.tags?.includes("政治"))) bonus += 1.5;
-  if ((state.hidden.bossDependency >= 38 || state.trust <= 45) && (event.tags?.includes("老板") || event.tags?.includes("政治"))) bonus += 1.5;
+  if ((state.hidden.bossDependency >= 38 || state.trust <= 45) && event.tags?.includes("老板")) bonus += 1.5;
+  if (state.hidden.politicalHeat >= 38 && event.tags?.includes("政治")) bonus += 1.7;
   if (state.round >= 9 && (event.tags?.includes("政治") || event.tags?.includes("老板"))) bonus += 0.8;
   if (state.memory.scheduledEffects.length < 2 && state.round <= 6 && (event.left?.schedule?.length || event.right?.schedule?.length)) bonus += 0.9;
   bonus += scenarioBiasWeight(event, state);
   bonus += phaseFlavorWeight(event, state);
   bonus += consequenceBiasWeight(event, state);
+  bonus += hiddenRouteWeight(event, state);
+  bonus += bpBufferWeight(event, state);
   bonus += stabilityPressureWeight(event, state);
   const recentPacks = state.memory.recentPacks || [];
   const recentTags = state.memory.recentTags || [];
@@ -349,6 +535,23 @@ function balanceWeight(event, state) {
   return (event.weight ?? 1) + bonus;
 }
 
+function chainRouteUrgency(event, state) {
+  const levels = hiddenRouteLevels(state);
+  let score = 0;
+  for (const [key, ids] of Object.entries(chainRoutePressure)) {
+    if (!ids.includes(event.id)) continue;
+    const level = levels[key] || 0;
+    if (!level) continue;
+    score += level >= 3 ? 2.3 : level >= 2 ? 1.4 : 0.7;
+  }
+  if (chainRouteConfigs.bp_buffer?.chains.includes(event.id)) {
+    const profile = bpBufferProfile(state);
+    if (state.round >= 5 && profile.level >= 2.6) score += state.round >= 9 ? profile.level * 0.32 : profile.level * 0.22;
+    if (event.id === "replacement_ready" && state.round < 9) score -= 1.6;
+  }
+  return score;
+}
+
 function chainUrgency(event, state) {
   const conditions = event.conditions || {};
   let score = event.priority ?? 1;
@@ -361,6 +564,7 @@ function chainUrgency(event, state) {
   score += thresholdMomentum(state.relations, conditions.relationMin, "min");
   score += thresholdMomentum(state.relations, conditions.relationMax, "max");
   score += (conditions.alternatives?.length || 0) * 0.25;
+  score += chainRouteUrgency(event, state);
   if (state.memory.scheduledEffects.length >= 3) score += 0.35;
   if ((state.memory.recentRoles || []).at(-1) === event.role) score -= 0.6;
   if ((state.memory.recentTitles || []).includes(event.title)) score -= 1.4;
@@ -450,6 +654,7 @@ function applyScheduledEffects(state) {
     };
     notes.push({
       ...payload,
+      type: item.type,
       routeId,
       sourceEventId: item.sourceEventId,
       sourceTitle: item.sourceTitle,
@@ -518,15 +723,15 @@ function choosePersona(state) {
 }
 
 function pickEnding(state) {
-  if (state.cash <= 12) return { title: "死于：现金流断裂", text: "最后不是市场把你打死的，是每一次“先冲一下”把账上的最后一口气磨没了。", memo: "规模能替你赢掌声，现金只会安静地决定你还能活多久。" };
-  if (state.team <= 12 || state.hidden.orgFatigue >= 82) return { title: "死于：组织崩盘", text: "报表还在出，流程还在转，但真正能把事情扛起来的人已经先散了。", memo: "组织不是成本项，它通常会在你最需要它的时候，按最贵的价格离开。" };
-  if (state.trust <= 12) return { title: "死于：老板不再信你", text: "你不一定每次都错，只是慢慢失去了那个还能把真话送到桌上的位置。", memo: "在经营里，判断正确只是开始，被关键的人听进去才算完整。" };
-  if (state.growth <= 12) return { title: "死于：增长停摆", text: "你把风险一层层压住了，也把向前的劲一并压没了。", memo: "守住盘子很重要，但公司活着不是为了证明自己没死。" };
-  if (state.hidden.customerTrust <= 12) return { title: "死于：客户反噬", text: "内部每一页表都还过得去，外部却已经开始用退款、流失和沉默给你答案。", memo: "客户通常不会在第一天翻脸，只会在你以为还来得及的时候悄悄离开。" };
-  if (state.hidden.riskExposure >= 88) return { title: "死于：风险集中爆雷", text: "你把太多灰区留给以后处理，最后它们挑了同一天回来收账。", memo: "很多雷不是突然炸的，只是你一直把爆炸那天往后推。" };
-  if (state.hidden.bossDependency >= 88 || state.trust >= 88) return { title: "死于：过度靠近权力", text: "你成了最被需要的那个人，也一步步把不该你背的东西都背到了自己身上。", memo: "离权力太远会失去位置，离得太近会失去边界。" };
-  if (state.cash >= 88 && state.growth < 44) return { title: "死于：过度保守", text: "钱是留下来了，但整个盘子也一起慢慢失去了想赢的速度。", memo: "安全从来不是终点，它最多只是继续向前的门票。" };
-  if (state.growth >= 88 && state.hidden.marginHealth < 42) return { title: "死于：虚假繁荣", text: "数字一度很热闹，可真正留下来的只有被掏空的利润、现金和团队。", memo: "热闹会让人短暂忘记真相，但经营最终只认真相。" };
+  if (state.cash <= 12) return { title: "死于：现金流断裂", text: "最后不是市场把你打死的，而是你替增长、关系和场面争来的每一口时间，最后都从现金里先垫了出去。", memo: "这个岗位常常先替别人把代价垫成一个还能继续开的会，直到连账上的最后一口气也垫没。", handoff: "几天后，新一任财务BP到岗了。第一场会里，还是有人说：先把这轮顶过去。" };
+  if (state.team <= 12 || state.hidden.orgFatigue >= 82) return { title: "死于：组织崩盘", text: "报表还在出，流程还在转，但那些本该被正面解决的拉扯，最后先压垮的是你和还在硬撑的人。", memo: "你一直在把冲突翻译成还能合作的样子，直到再也没有人愿意替这套样子继续买单。", handoff: "新一任财务BP到岗时，团队已经学会先看他的表情，再决定这次该把哪口气压住。" };
+  if (state.trust <= 12) return { title: "死于：老板不再信你", text: "你不一定每次都错，只是慢慢失去了那个还能把真话送上桌、再把场面接回来的位置。", memo: "这个岗位被需要时像心腹，不被需要时也最容易先失去说真话的资格。", handoff: "下一任很快到了。大家照旧说这个位置很重要，只是没人再提上一任是怎么离开的。" };
+  if (state.growth <= 12) return { title: "死于：增长停摆", text: "你把每一次会失控的风险都先接住了，也把整个盘子继续往前冲的劲一并接没了。", memo: "当一个岗位被长期用来缓冲矛盾，它迟早会把向前的速度也一起缓冲掉。", handoff: "几周后，新人入座。桌上摆着新的目标拆解，话还是那句：先别让场面掉下来。" };
+  if (state.hidden.customerTrust <= 12) return { title: "死于：客户反噬", text: "内部每一页表都还能讲，外部却已经开始用退款、流失和沉默提醒你，真相不会一直被版本挡在门外。", memo: "你能替很多人把冲突往后翻译，却翻译不了客户最后那句不再回来的拒绝。", handoff: "新一任到岗那天，客服还在汇总新的投诉。公司照常推进，只是客户早就开始用别的方式投票了。" };
+  if (state.hidden.riskExposure >= 88) return { title: "死于：风险集中爆雷", text: "你把太多灰区先接进流程、版本和解释里，最后它们挑了同一天，把原本该分散爆开的东西一起还给了你。", memo: "很多雷不是没人看见，而是总要先有人把它们接成一个还能继续往下走的样子。", handoff: "不久之后，新一任财务BP到岗。交接表很短，真正难写进表里的那部分，还在等下一个人继续接。" };
+  if (state.hidden.bossDependency >= 88 || state.trust >= 88) return { title: "死于：过度靠近权力", text: "你成了最被需要的那个人，也一步步把不该你背的判断、不该你兜的后果，都背到了自己身上。", memo: "离权力太远会失去位置，离得太近，这个位置就会慢慢从判断者变成默认的承接者。", handoff: "下一任来时，老板还是照样说：这事你先帮我接一下。语气很熟，像这个位置从来就该这么用。" };
+  if (state.cash >= 88 && state.growth < 44) return { title: "死于：过度保守", text: "钱是留下来了，但你也把太多本该正面回答的问题，一起留成了不再有人想碰的沉默。", memo: "安全从来不是终点。这个岗位一旦只剩下替所有人把风险往后拖，最后连想赢的资格也会一起拖没。", handoff: "新一任到岗后，第一份简报还是很稳。只是大家心里都知道，稳本身解决不了为什么一直没人敢真正往前走。" };
+  if (state.growth >= 88 && state.hidden.marginHealth < 42) return { title: "死于：虚假繁荣", text: "数字一度很热闹，可真正留下来的只有被掏空的利润、现金和团队，而你只是那个负责把热闹翻译成版本的人。", memo: "热闹会让人短暂忘记真相，也会让这个岗位看起来像还在掌控局面，直到代价一起回到桌上。", handoff: "新人很快到岗。新一轮周报还是漂亮，只是版本里照旧没有写上上一任是替谁把代价先接走的。" };
   return null;
 }
 
@@ -540,14 +745,18 @@ function buildQuarterSummary(state) {
     { key: "executionDebt", value: state.hidden.executionDebt },
     { key: "orgFatigue", value: state.hidden.orgFatigue },
     { key: "riskExposure", value: state.hidden.riskExposure },
+    { key: "bossDependency", value: state.hidden.bossDependency },
     { key: "politicalHeat", value: state.hidden.politicalHeat },
   ].sort((a, b) => b.value - a.value);
   const notes = [];
   if (state.hidden.marginHealth < 42) notes.push("你把规模往前推了一步，也把利润质量往后拖了一步。下次追问不会太远。");
-  if (state.hidden.executionDebt > 36) notes.push("这一季很多事只是被硬压过去，不是已经解决。执行债还在悄悄长。");
-  if (state.hidden.orgFatigue > 40) notes.push("组织已经不是简单地累了，而是在靠意志力替系统和节奏兜底。");
+  if (state.hidden.executionDebt > 36) notes.push("这一季你解决了不少表面问题，但很多坑只是被往后压。流程和补丁债已经开始自己长大。");
+  if (state.hidden.orgFatigue > 40) notes.push("组织已经不是单纯地忙，而是在靠意志力硬撑。再多来几轮，先扛不住的会是人。");
   if (state.hidden.dataMaturity > 52) notes.push("你开始不只是救火，而是在让系统和数据慢慢接手一部分判断。");
   if (state.hidden.customerTrust < 42) notes.push("客户端的损伤已经从感觉变成事实，后面每一步都会更贵。");
+  if (state.hidden.riskExposure > 42) notes.push("之前留着以后再说的灰区，已经开始慢慢长成法务和审计会真的来问的东西。");
+  if (state.hidden.bossDependency > 40) notes.push("你离权力更近了，但边界也在一起变薄。后面找上门来的，不会再只是需要你支持。");
+  if (state.hidden.politicalHeat > 40) notes.push("很多问题开始不只是对错，而是谁来定义、谁来讲、最后又该谁背。");
   if (notes.length === 0) notes.push("这一季没有明显爆点，但真正危险的局面往往也都是这样悄悄长出来的。");
   return { notes, strength: strengths[0], pressure: pressures[0] };
 }
@@ -578,96 +787,12 @@ function eventSpeech(event) {
   };
 }
 
-const chainCauseHints = {
-  cash_alert: "这是前面放长账期、继续冲规模之后，最先回来追你的现金账。",
-  collection_crunch: "你之前给出去的账期和空间，现在被客户一起当成了默认。",
-  supplier_stop_ship: "前面压着没结的款，已经从财务问题变成了供货问题。",
-  payroll_crunch: "之前那句“先顶一下”，现在开始直接落到发薪这件事上了。",
-  runway_bridge: "增长还在冲，现金已经开始用更真实的方式提醒你跑道见底。",
-  board_cash_probe: "前面还能用增长挡一挡，这次董事开始直接问钱去哪了。",
-  resignation: "前面那些被压下去的疲惫和委屈，现在开始以离职的方式回来。",
-  finance_meltdown: "之前每次先交再补、先顶再说的后果，开始一起压到财务团队身上。",
-  manager_walkout: "你前面按住的矛盾，现在已经不再愿意只停在会后。",
-  culture_split: "结果和边界这两股拉扯，终于把团队撕成了看得见的两边。",
-  boss_dependency: "你之前一次次替老板兜住灰区，这次那份信任开始反过来要你接更多锅。",
-  stand_side: "前面累积起来的位置和亲近感，现在开始逼你公开选边。",
-  promise_settlement: "之前替场面放出去的话，现在到了必须兑现的时间。",
-  owner_override: "你前面让出去的边界，这次被老板直接一步跨了过去。",
-  trust_crack: "之前几次没讲清、没兜稳的事，开始一起磨掉老板对你的耐心。",
-  customer_backlash: "前面那些被你往后放的质量和交付问题，现在开始从客户端一起爆出来。",
-  margin_truth_day: "之前用 GMV 和增长盖过去的地方，这次终于被问到利润本身。",
-  price_war_spiral: "你之前给出去的低价和补贴，正在反过来把整个市场一起拖下去。",
-  channel_dumping: "前面压进渠道的货，现在开始用更难看的价格自己往外跑。",
-  vip_client_threat: "前面被忍下来的不稳和瑕疵，这次开始让核心客户动摇。",
-  inventory_lock: "你之前压进去的库存，现在开始和现金一起互相锁死。",
-  warehouse_overflow: "前面多压、多调、多堆的货，已经把仓里逼到了极限。",
-  seasonal_hangover: "你当时押下去的季节货，现在正按最慢也最贵的方式回来找你。",
-  forecast_trust_break: "前面靠人工和解释兜住的预测，这次开始连基本信任都撑不住了。",
-  data_escalation: "之前那些口径冲突没被解决，现在已经升级成谁说了算的问题。",
-  close_failure: "每次“先交版本”的代价，终于在这次月结里一起炸开了。",
-  audit_shock: "前面留过的口子和例外，这次被审计正式翻到了台面上。",
-  boardroom_illusion: "你前面没打断的乐观叙事，这次开始在会上整体失真。",
-  project_blackhole: "之前接下来的关系项目，现在开始用预算和进度一点点吞你。",
-  blame_meeting: "前面压着没说清的责任，这次开始在会上公开找人背。",
-  legal_red_flag: "之前被你们往后拖的灰区，现在正式被法务拉到了红线。",
-  white_lie_exposed: "你当时没讲全的那句话，这次被别人原样追了回来。",
-  vendor_interest_probe: "前面那段说不清的供应商关系，现在开始被外部盯上了。",
-  customer_refund_wave: "之前没止住的退款和客诉，这次开始形成真正的趋势线。",
-  ops_shadow_process: "你前面默认存在的临时土办法，已经长成业务真正的影子流程。",
-  headcount_frozen_market: "冻结招聘这件事，已经开始反过来伤你在市场上的招人能力。",
-};
-
-const routeFamilies = {
-  cash_credit: {
-    label: "账期放量",
-    choices: ["long_terms", "bad_debt_signal", "soft_collection", "credit_control", "deposit_negotiation", "order_first", "factoring", "hold_receivable"],
-    delayed: ["receivable_pressure", "bad_debt_writeoff"],
-    chains: ["cash_alert", "collection_crunch", "board_cash_probe"],
-  },
-  supply_inventory: {
-    label: "压货保供",
-    choices: ["advance_payment", "inventory_push", "supplier_moq", "seasonal_bet", "warehouse_transfer", "prepay_inventory"],
-    delayed: ["supplier_lock", "inventory_backfire", "warehouse_congestion", "seasonal_markdown", "moq_cash_drag"],
-    chains: ["supplier_stop_ship", "inventory_lock", "warehouse_overflow", "seasonal_hangover"],
-  },
-  boss_boundary: {
-    label: "替老板兜底",
-    choices: ["boss_temp_number", "overnight_forecast", "boss_station", "sign_fast", "public_promise", "need_boss_backing", "cross_line_approval", "meeting_rewrite", "shadow_decision", "need_white_lie"],
-    delayed: ["backfill_weekend", "expectation_lockin", "public_promise_gap", "rework_whiplash", "shadow_authority", "boundary_erosion"],
-    chains: ["boss_dependency", "stand_side", "promise_settlement", "owner_override", "trust_crack", "boardroom_illusion", "white_lie_exposed"],
-  },
-  org_strain: {
-    label: "组织透支",
-    choices: ["freeze_hiring", "burn_team", "performance_push", "middle_manager_blame", "hold_salary", "weekend_overtime", "salary_guard"],
-    delayed: ["capacity_gap", "resignation_wave", "manager_trust_drop", "overtime_backlash", "recruiting_miss", "morale_dip"],
-    chains: ["resignation", "finance_meltdown", "manager_walkout", "culture_split", "headcount_frozen_market"],
-  },
-  margin_price: {
-    label: "低价冲量",
-    choices: ["festival_promo", "marketplace_coupon", "heavy_discount", "channel_rebate", "low_margin_big_order", "stack_more_coupons", "absorb_fee"],
-    delayed: ["promo_margin_gap", "coupon_addiction", "margin_reckoning", "rebate_reconciliation", "fee_spike_followup"],
-    chains: ["margin_truth_day", "price_war_spiral", "channel_dumping"],
-  },
-  data_control: {
-    label: "手工兜数",
-    choices: ["build_system", "delay_system", "data_alignment", "dashboard_delay", "dashboard_patch", "close_rush", "close_rush_patch", "report_error", "silent_fix", "manual_reconcile", "forecast_gap", "manual_forecast"],
-    delayed: ["dashboard_blindspot", "close_delay", "credibility_loss", "reconciliation_fatigue"],
-    chains: ["data_escalation", "close_failure", "forecast_trust_break"],
-  },
-  customer_quality: {
-    label: "质量后账",
-    choices: ["flagship_launch", "repair_cost_fix", "return_repair_cost", "returns_restock", "procurement_substitute", "hot_sku_stockout", "replacement_parts"],
-    delayed: ["launch_returns", "repair_cost_creep", "stockout_penalty"],
-    chains: ["customer_backlash", "customer_refund_wave", "vip_client_threat"],
-  },
-};
-
 function routeLabel(routeId) {
-  return routeFamilies[routeId]?.label || "";
+  return chainRouteConfigs[routeId]?.label || "";
 }
 
 function findRouteId({ eventId, flags = [], delayedType, chainId }) {
-  const candidates = Object.entries(routeFamilies)
+  const candidates = Object.entries(chainRouteConfigs)
     .map(([routeId, config]) => {
       let score = 0;
       if (eventId && config.choices.includes(eventId)) score += 3;
@@ -691,16 +816,6 @@ function ledgerEntryLabel(entry) {
   return entry.choiceLabel ? `${entry.title} · ${entry.choiceLabel}` : entry.title;
 }
 
-const routeNarratives = {
-  cash_credit: "账期先放出去，回款就会一点点拖，最后现金压力会回来按你桌子。",
-  supply_inventory: "货先压进去，仓和现金就会一起发紧，最后库存会反过来锁住你。",
-  boss_boundary: "先替老板把场面兜住，边界就会一寸寸往后退，最后更大的锅也会顺手塞给你。",
-  org_strain: "先省人、再硬顶，组织不会立刻翻脸，只会慢慢用离职和冷掉来收账。",
-  margin_price: "先拿低价换量，毛利就会一层层变薄，最后整盘生意都会回来追这口利润。",
-  data_control: "先靠人工和解释把数兜住，口径就会慢慢失真，最后谁都不再真信那套数。",
-  customer_quality: "先把质量和售后往后放，客诉和退款就会慢慢抬头，最后客户会直接拿脚投票。",
-};
-
 function routeTrailText(routeId, history = [], currentLabel = "") {
   if (!routeId) return "";
   const steps = history
@@ -710,7 +825,7 @@ function routeTrailText(routeId, history = [], currentLabel = "") {
     .filter(Boolean);
   if (currentLabel) steps.push(currentLabel);
   const deduped = steps.filter((step, index) => steps.indexOf(step) === index);
-  const summary = routeNarratives[routeId];
+  const summary = chainRouteConfigs[routeId]?.narrative;
   if (deduped.length < 2) return routeLabel(routeId) ? `因果链：${routeLabel(routeId)}` : "";
   if (!summary) return `因果链：${deduped.join(" -> ")}`;
   return `因果链：${summary} 当前走到：${deduped.join(" -> ")}`;
@@ -768,8 +883,8 @@ function outcomeFragment(kind, key, value) {
     team: "团队情绪暂时稳了一点",
     trust: "老板这边暂时更偏向你",
     marginHealth: "利润质量被往回拉了一点",
-    executionDebt: "执行债暂时没有继续堆高",
-    orgFatigue: "团队没刚才那么绷了",
+    executionDebt: "那些被你往后压的坑，暂时少了一层",
+    orgFatigue: "团队总算没刚才那么硬撑了",
     dataMaturity: "系统和数据总算更像个体系",
     customerTrust: "客户那边暂时还能稳住",
     riskExposure: "风险被你先按住了一截",
@@ -788,8 +903,8 @@ function outcomeFragment(kind, key, value) {
     team: "团队那口气又往下掉了一点",
     trust: "老板明显没刚才那么信你了",
     marginHealth: "利润质量又松了一层",
-    executionDebt: "执行债被你继续往后压了",
-    orgFatigue: "团队明显更累了",
+    executionDebt: "问题又被你往后压了一层",
+    orgFatigue: "团队已经开始靠硬撑顶着了",
     dataMaturity: "数据和系统还是没跟上",
     customerTrust: "客户那边又记了一笔",
     riskExposure: "风险被你继续留到了后面",
@@ -814,10 +929,94 @@ function singleLine(text = "") {
     .trim();
 }
 
+const delayedStoryOpeners = {
+  cash_credit: "前面放出去的账期，现在开始回来收账了",
+  supply_inventory: "之前压进去的货，现在开始把仓和现金一起拖住了",
+  boss_boundary: "你替老板兜住的那口气，现在开始反过来压你了",
+  org_strain: "之前让团队硬扛下去的代价，现在开始一层层冒出来了",
+  margin_price: "前面靠低价换来的热闹，现在开始拿利润来还了",
+  data_control: "前面靠手工兜住的地方，现在开始自己漏出来了",
+  customer_quality: "之前先压下去的质量问题，现在开始从客户端回来了",
+};
+
+const delayedStoryOverrides = {
+  ad_payback_review: "当时先把量冲起来了，现在回收开始慢慢露底了",
+  launch_returns: "首发那天抢到的热闹，现在正一单单从售后里退回来",
+  streamer_roi_miss: "镜头前冲上去的数据，现在开始在账上露出原形了",
+  promo_margin_gap: "大促那天冲出来的量，现在开始逼你拿利润来补",
+  collab_backlash: "那次联名带来的声量过去了，留下来的全是兑现成本",
+  affiliate_fraud: "当时看着像新增订单，现在开始有脏流量自己浮上来了",
+  receivable_pressure: "你当时放出去的空间，现在全变成挂在账上的钱了",
+  supplier_lock: "省下来的那口现金，现在开始从交付上反咬你了",
+  payroll_risk: "钱还没真断，消息已经先在组织里传开了",
+  bad_debt_writeoff: "那笔当时还想再等等的应收，现在已经等成洞了",
+  bridge_loan_interest: "借来的那口气已经缓过去了，利息现在开始按月来收",
+  tax_audit_ping: "当时换来的喘息过去了，解释这笔账的人现在还是你",
+  settlement_mismatch: "那点你以为还能追回来的差额，现在已经实打实落到账上了",
+  expectation_lockin: "那次你想先过关，现在别人已经把它当成默认了",
+  backfill_weekend: "借出去的周末开始收不回来了，团队也慢慢记住这件事了",
+  public_promise_gap: "当时台上讲得越满，现在台下就越难收",
+  boundary_erosion: "你退过一次边界，后面就会有人默认你还会再退",
+  investor_question: "当时先把故事撑起来了，现在细节开始一条条追上来了",
+  rework_whiplash: "那次为了先过的加工，现在全变成返工重新拍回来了",
+  shadow_authority: "当时多接过去的那点权，现在开始连着更模糊的责任一起长出来了",
+  capacity_gap: "那个暂时不补的人头，现在已经变成了满地掉的事",
+  resignation_wave: "前面几次说再扛一下，现在开始真的有人走了",
+  morale_dip: "前面那几次硬顶过去的活，现在开始从情绪上找你还了",
+  recruiting_miss: "那个当时没补上的缺口，现在已经从招聘市场上反过来挑你了",
+  manager_trust_drop: "那次没讲透的绩效解释过去了，中层现在开始真不信了",
+  overtime_backlash: "那几个默认加班的周末过去了，人心现在开始一起往下掉",
+  onboarding_slip: "那个没人真接住的新经理，现在开始把磨合成本都摊回来了",
+  margin_reckoning: "当时靠低价换来的热闹，现在开始一笔笔从利润里扣回来了",
+  fee_spike_followup: "那次你以为能自己扛住的费用变化，现在已经开始改利润结构了",
+  repair_cost_creep: "前台先卖出去的轻松，现在开始从返修和售后里慢慢补回来",
+  clearance_habit: "那次清仓清掉的不只是库存，还把用户的价格预期一起教坏了",
+  rebate_reconciliation: "当时放出去的返点现在开始结算了，黑洞也终于有了名字",
+  project_margin_slip: "为了把项目先接住的那一下，现在开始从利润里一点点漏回来",
+  price_protection_hit: "你开过一次的口子，现在已经有人默认后面还会继续开",
+  inventory_backfire: "那批当时怕来不及的货，现在开始把现金一格格压住了",
+  stockout_penalty: "没抢到的货早就过去了，平台和客户的账现在才开始算",
+  expedite_cost: "那次花钱买到的速度已经过去了，成本还留在这儿慢慢发作",
+  obsolete_writeoff: "以前还能说是卖得慢，现在这笔货已经慢到只能认亏了",
+  warehouse_congestion: "那次为了先转开的货，现在开始在仓里自己打结了",
+  moq_cash_drag: "单价上省下来的那点，已经全被沉下去的现金吞回去了",
+  seasonal_markdown: "那次押窗口的货没等来窗口，只等来了打折出清",
+  data_credibility_hit: "前面那些先凑起来的版本，现在开始一起拖垮数字的信用了",
+  coupon_addiction: "那张券救了当时的转化，也教会了用户继续等券",
+  close_delay: "你当时省下来的那点时间，现在全变成了月结的坑",
+  reconciliation_fatigue: "那几次都能补上的手工活，现在开始把节奏一点点拖散了",
+  permission_breach: "当时觉得只是放松一点的权限，现在已经长成真的口子了",
+  excel_version_sprawl: "先凑着用的几版表，现在已经各自活成了一套真相",
+  erp_cutover_noise: "系统是切上去了，但当时没补齐的习惯现在开始全冒头了",
+  dashboard_blindspot: "先容忍的半天延迟，现在已经让人开始靠猜做决定了",
+  audit_followup: "那次你以为先过门的材料，现在只是换了个房间继续追你",
+  blame_sticks: "你当时接过去稳场的那口锅，现在已经开始被写成你的职责了",
+  compliance_heat: "那次例外虽然批下来了，但盯着这件事的人现在越来越多了",
+  vendor_question: "之前装作看不见的关系，现在终于有人开始认真记了",
+  credibility_loss: "那次没说全的话，现在开始一起拖你的信用了",
+  white_lie_interest: "那句当时省事的话没有消失，只是现在开始连本带息回来",
+  political_heatwave: "那股你以为还能压住的气氛，现在已经热到躲不开了",
+  office_romance_escalates: "那段你没处理的关系，已经开始把排班和汇报都卷进来了",
+  vendor_dinner_photo: "那顿饭早就吃完了，照片现在才开始替你说话",
+  promotion_grievance: "名单虽然已经发了，真正的后账现在才从没上去的人那里开始",
+  referral_backfire: "那次看着顺手的人情安排，现在开始被组织按另一本账来算了",
+  clique_backlash: "那几个先内部转起来的消息，现在开始让所有协作一起变慢了",
+  assistant_overreach_cost: "前面省下来的那点沟通，现在开始用返工和补解释一点点还回来",
+  gossip_spread: "那句当时只想私下说的话，现在已经活成了公开版本",
+  favor_receipt: "你以为只是通融一次，别人现在已经拿着这张旧条子来排队了",
+};
+
+function delayedStoryLine(note) {
+  if (!note) return "";
+  if (note.type && delayedStoryOverrides[note.type]) return delayedStoryOverrides[note.type];
+  const body = singleLine(note.desc || note.title);
+  const opener = delayedStoryOpeners[note.routeId] || "前面埋下的那笔后账，现在回来收账了";
+  return body ? `${opener}：${body}` : opener;
+}
+
 function conciseOutcomeFollowup({ override, highlights, dueNote, routeId }) {
   if (override?.followup) return singleLine(override.followup);
-  if (dueNote?.desc) return singleLine(dueNote.desc);
-  if (dueNote?.title) return singleLine(dueNote.title);
+  if (dueNote) return delayedStoryLine(dueNote);
   if (highlights?.length) return singleLine(highlights[0]);
   if (routeId && routeLabel(routeId)) return `这一步把你往${routeLabel(routeId)}又推了一点`;
   return "";
@@ -956,22 +1155,70 @@ function sceneTheme(screen, event) {
   };
 }
 
-function ProgressBar({ label, value }) {
+function ProgressBar({ label, value, previewValue = value, previewDirection = 0, previewActive = false }) {
+  const baseWidth = `${clamp(value)}%`;
+  const target = clamp(previewValue);
+  const changed = target !== value;
+  const deltaWidth = `${Math.abs(target - value)}%`;
+  const previewColor = previewDirection >= 0 ? "#22c55e" : "#ff3b30";
+  const previewGlow = previewDirection >= 0 ? "rgba(34, 197, 94, 0.55)" : "rgba(255, 59, 48, 0.68)";
+  const overlayStyle = changed
+    ? previewDirection >= 0
+      ? { left: baseWidth, width: deltaWidth }
+      : { left: `${target}%`, width: deltaWidth }
+    : { left: baseWidth, width: 0 };
+
   return (
     <div style={{ display: "grid", gap: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6b7280" }}>
         <span>{label}</span>
-        <span>{value}</span>
       </div>
-      <div style={{ height: 6, background: "#e5e7eb", borderRadius: 999 }}>
-        <div style={{ width: `${value}%`, height: "100%", borderRadius: 999, background: "#111827" }} />
+      <div
+        style={{
+          height: 8,
+          background: "#e5e7eb",
+          borderRadius: 999,
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: changed ? `0 0 0 1px rgba(17, 24, 39, 0.03), 0 0 14px ${previewGlow}` : "none",
+        }}
+      >
+        <motion.div
+          style={{ height: "100%", borderRadius: 999, background: "#111827", position: "absolute", left: 0, top: 0 }}
+          animate={{ width: baseWidth }}
+          transition={{ type: "spring", stiffness: 280, damping: 28 }}
+        />
+        {changed && (
+          <motion.div
+            style={{
+              height: "100%",
+              borderRadius: 999,
+              background: previewColor,
+              position: "absolute",
+              top: 0,
+              boxShadow: `0 0 16px ${previewGlow}`,
+              ...overlayStyle,
+            }}
+            animate={
+              previewActive
+                ? { opacity: [0.62, 1, 0.62], scaleY: [1, 1.18, 1] }
+                : { opacity: 0.92, scaleY: 1.08 }
+            }
+            transition={
+              previewActive
+                ? { duration: 0.72, repeat: Infinity, ease: "easeInOut" }
+                : { duration: 0.12 }
+            }
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function SwipeCard({ event, onChoose }) {
+function SwipeCard({ event, onChoose, onPreviewChange }) {
   const x = useMotionValue(0);
+  const previewThreshold = 18;
   const rotate = useTransform(x, [-180, 180], [-11, 11]);
   const leftOpacity = useTransform(x, [-180, -70, -18, 0], [1, 0.88, 0.28, 0]);
   const rightOpacity = useTransform(x, [0, 18, 70, 180], [0, 0.28, 0.88, 1]);
@@ -980,14 +1227,34 @@ function SwipeCard({ event, onChoose }) {
   const leftScale = useTransform(x, [-180, -70, -18, 0], [1.08, 1.03, 0.98, 0.94]);
   const rightScale = useTransform(x, [0, 18, 70, 180], [0.94, 0.98, 1.03, 1.08]);
 
+  useEffect(() => {
+    const unsubscribe = x.on("change", (latest) => {
+      const distance = Math.abs(latest);
+      if (distance < previewThreshold) {
+        onPreviewChange?.(null);
+        return;
+      }
+      onPreviewChange?.({
+        side: latest < 0 ? "left" : "right",
+      });
+    });
+    return () => {
+      unsubscribe?.();
+      onPreviewChange?.(null);
+    };
+  }, [x, onPreviewChange]);
+
   const handleEnd = async (_, info) => {
     if (info.offset.x < -110) {
       await animate(x, -420, { duration: 0.18 });
+      onPreviewChange?.(null);
       onChoose("left");
     } else if (info.offset.x > 110) {
       await animate(x, 420, { duration: 0.18 });
+      onPreviewChange?.(null);
       onChoose("right");
     } else {
+      onPreviewChange?.(null);
       animate(x, 0, { type: "spring", stiffness: 380, damping: 26 });
     }
   };
@@ -1096,16 +1363,11 @@ function BriefingCard({ onStart }) {
   );
 }
 
-function shareTextFromState(state) {
-  const persona = choosePersona(state);
-  return `我在《财权》里活到了第 ${state.round} 轮\n${state.ending.title}\n${state.ending.text}\n职业画像：${persona.title}\n${persona.desc}`;
-}
-
 function App() {
   const [state, setState] = useState(() => scenarioToState());
-  const [copied, setCopied] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const [openingScreen, setOpeningScreen] = useState("producer");
+  const [previewChoice, setPreviewChoice] = useState(null);
   const audioRef = useRef(null);
   const prevSceneRef = useRef({ screen: state.screen, eventId: null });
 
@@ -1119,6 +1381,23 @@ function App() {
   const surfaceBoxStyle = useMemo(() => ({ ...boxedStyle, background: theme.boxBg }), [theme]);
   const surfaceMiniCardStyle = useMemo(() => ({ ...miniCardStyle, background: theme.miniBg }), [theme]);
   const surfaceStatusPillStyle = useMemo(() => ({ ...statusPillStyle, background: theme.miniBg }), [theme]);
+  const statPreview = useMemo(() => {
+    if (state.screen !== "event" || !previewChoice?.side) {
+      return Object.fromEntries(STAT_KEYS.map((key) => [key, { value: state[key], previewValue: state[key], direction: 0, active: false }]));
+    }
+    const choice = currentEvent?.[previewChoice.side];
+    if (!choice) {
+      return Object.fromEntries(STAT_KEYS.map((key) => [key, { value: state[key], previewValue: state[key], direction: 0, active: false }]));
+    }
+    const scaled = scaleStatDelta(choice.effect, state.round);
+    return Object.fromEntries(
+      STAT_KEYS.map((key) => {
+        const delta = scaled[key] || 0;
+        const previewValue = clamp(state[key] + delta);
+        return [key, { value: state[key], previewValue, direction: Math.sign(delta), active: delta !== 0 }];
+      }),
+    );
+  }, [state, currentEvent, previewChoice]);
 
   useEffect(() => {
     if (openingScreen !== "producer") return undefined;
@@ -1127,6 +1406,10 @@ function App() {
     }, 3000);
     return () => window.clearTimeout(timer);
   }, [openingScreen]);
+
+  useEffect(() => {
+    if (state.screen !== "event") setPreviewChoice(null);
+  }, [state.screen, currentEvent?.id]);
 
   useEffect(() => {
     const previous = prevSceneRef.current;
@@ -1199,6 +1482,7 @@ function App() {
   };
 
   const applyChoice = (side) => {
+    setPreviewChoice(null);
     const choice = currentEvent[side];
     playUiSound(audioRef, side === "left" ? "swipeLeft" : "swipeRight", soundOn);
     const routeId = findRouteId({ eventId: currentEvent.id, flags: choice.flags || [] });
@@ -1255,31 +1539,6 @@ function App() {
     advance(next);
   };
 
-  const shareEnding = async () => {
-    const text = shareTextFromState(state);
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "财权 · 结局", text });
-      } else {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }
-    } catch {
-      // ignore
-    }
-  };
-
-  const copyEnding = async () => {
-    try {
-      await navigator.clipboard.writeText(shareTextFromState(state));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // ignore
-    }
-  };
-
   return (
     <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(8px, 2.8vw, 16px)", boxSizing: "border-box", background: theme.appBg, transition: "background 240ms ease" }}>
       <div style={{ width: "min(100%, 430px)", height: "min(calc(100dvh - 16px), 860px)", maxHeight: "calc(100dvh - 16px)", minHeight: 0, boxSizing: "border-box", background: theme.frameBg, borderRadius: 34, overflow: "hidden", border: theme.frameBorder, boxShadow: theme.frameShadow, display: "flex", flexDirection: "column", position: "relative", transition: "background 240ms ease, box-shadow 240ms ease" }}>
@@ -1318,8 +1577,17 @@ function App() {
               <button onClick={restart} style={iconBtnStyle} title="随机重开"><RotateCcw size={16} /></button>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {STAT_KEYS.map((key) => <ProgressBar key={key} label={statLabel(key)} value={state[key]} />)}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {STAT_KEYS.map((key) => (
+              <ProgressBar
+                key={key}
+                label={statLabel(key)}
+                value={statPreview[key].value}
+                previewValue={statPreview[key].previewValue}
+                previewDirection={statPreview[key].direction}
+                previewActive={statPreview[key].active && state.screen === "event"}
+              />
+            ))}
           </div>
         </div>
 
@@ -1340,7 +1608,7 @@ function App() {
                     <div style={speechQuoteStyle}>{currentSpeech.quote}</div>
                     <p style={speechDescStyle}>{currentSpeech.followup}</p>
                   </div>
-                  <SwipeCard event={currentEvent} onChoose={applyChoice} />
+                  <SwipeCard event={currentEvent} onChoose={applyChoice} onPreviewChange={setPreviewChoice} />
                 </motion.div>
               )}
 
@@ -1383,23 +1651,17 @@ function App() {
               )}
 
               {state.screen === "ending" && (
-                <motion.div key={`ending_${state.round}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={surfacePanelStyle}>
+                <motion.div key={`ending_${state.round}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ ...surfacePanelStyle, maxWidth: 352, paddingTop: 22, paddingBottom: 18 }}>
                   <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Skull size={52} /></div>
                   <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9f6b4f" }}>结局</div>
                   <h2 style={titleStyle}>{state.ending.title}</h2>
                   <p style={descStyle}>{state.ending.text}</p>
-                  <div style={surfaceBoxStyle}>
-                    <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.12em" }}>你的职业画像</div>
-                    <div style={{ marginTop: 6, fontSize: 16, fontWeight: 900 }}>{persona.title}</div>
-                    <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: "#4b5563" }}>{persona.desc}</div>
-                    <div style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>{state.ending.memo}</div>
+                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: "#6b7280", textAlign: "center" }}>{state.ending.memo}</div>
+                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8, textAlign: "center" }}>你活到了第 {state.round} 轮</div>
+                  <div style={{ ...surfaceBoxStyle, marginTop: 12, textAlign: "center", padding: "14px 16px" }}>
+                    <div style={{ fontSize: 14, lineHeight: 1.8, color: "#4b5563" }}>{state.ending.handoff}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>你活到了第 {state.round} 轮</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
-                    <button onClick={shareEnding} style={secondaryBtnStyle}><Share2 size={16} /> 分享结局</button>
-                    <button onClick={copyEnding} style={secondaryBtnStyle}><Copy size={16} /> {copied ? "已复制" : "复制文案"}</button>
-                  </div>
-                  <button onClick={restart} style={primaryBtnStyle}>再开一局</button>
+                  <button onClick={restart} style={{ ...primaryBtnStyle, marginTop: 12 }}>工作交接</button>
                 </motion.div>
               )}
             </AnimatePresence>

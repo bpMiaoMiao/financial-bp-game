@@ -174,8 +174,8 @@ export const chainEvents = [
         "trust": -1
       },
       "hidden": {
-        "orgFatigue": 2,
-        "executionDebt": 1
+        "riskExposure": 2,
+        "politicalHeat": 1
       },
       "relations": {
         "finance": 2,
@@ -229,8 +229,8 @@ export const chainEvents = [
         "trust": -1
       },
       "hidden": {
-        "orgFatigue": 2,
-        "executionDebt": 1
+        "orgFatigue": 3,
+        "politicalHeat": 2
       },
       "relations": {
         "finance": 2,
@@ -382,8 +382,7 @@ export const chainEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -6
       },
       "relations": {
         "hr": 3,
@@ -402,7 +401,7 @@ export const chainEvents = [
       },
       "hidden": {
         "orgFatigue": 8,
-        "executionDebt": 4
+        "politicalHeat": 2
       },
       "relations": {
         "hr": -4,
@@ -436,7 +435,7 @@ export const chainEvents = [
       },
       "hidden": {
         "orgFatigue": -6,
-        "executionDebt": -2
+        "executionDebt": -3
       },
       "relations": {
         "hr": 3,
@@ -455,7 +454,7 @@ export const chainEvents = [
       },
       "hidden": {
         "orgFatigue": 8,
-        "executionDebt": 4
+        "executionDebt": 3
       },
       "relations": {
         "hr": -4,
@@ -475,9 +474,29 @@ export const chainEvents = [
     "title": "中层准备一起摊牌",
     "desc": "他们不是不干，是不想再在同一套逻辑里干。",
     "conditions": {
-      "allFlags": [
-        "middle_manager_blame",
-        "performance_push"
+      "alternatives": [
+        {
+          "allFlags": [
+            "middle_manager_blame",
+            "performance_push"
+          ]
+        },
+        {
+          "allFlags": [
+            "performance_delay"
+          ],
+          "hiddenMin": {
+            "politicalHeat": 34
+          }
+        },
+        {
+          "allFlags": [
+            "performance_delay"
+          ],
+          "hiddenMin": {
+            "orgFatigue": 34
+          }
+        }
       ]
     },
     "left": {
@@ -508,8 +527,7 @@ export const chainEvents = [
         "trust": -4
       },
       "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
+        "politicalHeat": 2
       },
       "relations": {
         "boss": 1,
@@ -530,12 +548,34 @@ export const chainEvents = [
     "title": "团队开始分成两派",
     "desc": "一派要结果，一派要边界，彼此已经听不进去。",
     "conditions": {
-      "statMax": {
-        "team": 38
-      },
-      "hiddenMin": {
-        "politicalHeat": 38
-      }
+      "alternatives": [
+        {
+          "statMax": {
+            "team": 38
+          },
+          "hiddenMin": {
+            "politicalHeat": 38
+          }
+        },
+        {
+          "allFlags": [
+            "weekend_overtime",
+            "ceo_weekend_call"
+          ],
+          "hiddenMin": {
+            "orgFatigue": 34
+          }
+        },
+        {
+          "allFlags": [
+            "burn_team",
+            "ceo_weekend_call"
+          ],
+          "hiddenMin": {
+            "orgFatigue": 36
+          }
+        }
+      ]
     },
     "left": {
       "label": "重建规则",
@@ -545,8 +585,8 @@ export const chainEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -4,
+        "politicalHeat": -5
       },
       "relations": {
         "hr": 3,
@@ -564,8 +604,8 @@ export const chainEvents = [
         "team": -9
       },
       "hidden": {
-        "orgFatigue": 8,
-        "executionDebt": 4
+        "orgFatigue": 4,
+        "politicalHeat": 6
       },
       "relations": {
         "hr": -4,
@@ -585,12 +625,27 @@ export const chainEvents = [
     "title": "这事你拍吧，我信你。",
     "desc": "老板把灰区轻轻一推，像信任，也像把边界一并推给你。",
     "conditions": {
-      "relationMin": {
-        "boss": 66
-      },
-      "hiddenMin": {
-        "bossDependency": 40
-      }
+      "alternatives": [
+        {
+          "relationMin": {
+            "boss": 66
+          },
+          "hiddenMin": {
+            "bossDependency": 40
+          }
+        },
+        {
+          "allFlags": [
+            "cross_line_approval"
+          ],
+          "relationMin": {
+            "boss": 58
+          },
+          "hiddenMin": {
+            "bossDependency": 32
+          }
+        }
+      ]
     },
     "left": {
       "label": "接",
@@ -599,10 +654,9 @@ export const chainEvents = [
         "growth": 2,
         "team": -1
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 3
-      },
+    "hidden": {
+      "bossDependency": 3
+    },
       "relations": {
         "boss": 3,
         "sales": 1
@@ -610,12 +664,7 @@ export const chainEvents = [
       "flags": [
         "boss_confidant"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "boundary_erosion"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "不接",
@@ -623,10 +672,9 @@ export const chainEvents = [
         "trust": -3,
         "team": 4
       },
-      "hidden": {
-        "politicalHeat": -2,
-        "bossDependency": -4
-      },
+    "hidden": {
+      "bossDependency": -4
+    },
       "relations": {
         "boss": -3,
         "hr": 1
@@ -701,10 +749,30 @@ export const chainEvents = [
     "title": "之前放出去的话开始追债",
     "desc": "当时谁都想先把场面稳住，现在轮到兑现。",
     "conditions": {
-      "allFlags": [
-        "public_promise"
-      ],
-      "roundMin": 8
+      "roundMin": 7,
+      "alternatives": [
+        {
+          "allFlags": [
+            "public_promise"
+          ]
+        },
+        {
+          "allFlags": [
+            "board_deck_polish"
+          ],
+          "hiddenMin": {
+            "bossDependency": 30
+          }
+        },
+        {
+          "allFlags": [
+            "sign_fast"
+          ],
+          "hiddenMin": {
+            "bossDependency": 34
+          }
+        }
+      ]
     },
     "left": {
       "label": "先补承诺",
@@ -785,10 +853,9 @@ export const chainEvents = [
         "trust": -3,
         "team": 4
       },
-      "hidden": {
-        "politicalHeat": -2,
-        "bossDependency": -4
-      },
+    "hidden": {
+      "bossDependency": -4
+    },
       "relations": {
         "boss": -3,
         "hr": 1
@@ -839,10 +906,9 @@ export const chainEvents = [
         "trust": -3,
         "team": 4
       },
-      "hidden": {
-        "politicalHeat": -2,
-        "bossDependency": -4
-      },
+    "hidden": {
+      "bossDependency": -4
+    },
       "relations": {
         "boss": -3,
         "hr": 1
@@ -1195,8 +1261,7 @@ export const chainEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -5
       },
       "relations": {
         "hr": 3,
@@ -1287,13 +1352,35 @@ export const chainEvents = [
     "title": "没人再信预测了",
     "desc": "每次都解释说情况变了，但大家已经不买账。",
     "conditions": {
-      "allFlags": [
-        "gmv_target",
-        "manual_forecast"
-      ],
-      "hiddenMax": {
-        "dataMaturity": 32
-      }
+      "alternatives": [
+        {
+          "allFlags": [
+            "gmv_target",
+            "manual_forecast"
+          ],
+          "hiddenMax": {
+            "dataMaturity": 32
+          }
+        },
+        {
+          "allFlags": [
+            "month_end_patch",
+            "silent_fix"
+          ],
+          "hiddenMax": {
+            "dataMaturity": 34
+          }
+        },
+        {
+          "allFlags": [
+            "report_error",
+            "month_end_patch"
+          ],
+          "hiddenMax": {
+            "dataMaturity": 36
+          }
+        }
+      ]
     },
     "left": {
       "label": "重做预测体系",
@@ -1304,8 +1391,7 @@ export const chainEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -1345,12 +1431,34 @@ export const chainEvents = [
     "title": "现在大家争的已经不是数，是谁有资格定义那套数。",
     "desc": "财务总监把话说透了，你也知道这事再也回不到技术问题。",
     "conditions": {
-      "hiddenMin": {
-        "executionDebt": 34
-      },
-      "hiddenMax": {
-        "dataMaturity": 32
-      }
+      "alternatives": [
+        {
+          "hiddenMin": {
+            "executionDebt": 34
+          },
+          "hiddenMax": {
+            "dataMaturity": 32
+          }
+        },
+        {
+          "allFlags": [
+            "avoid_conflict",
+            "silent_fix"
+          ],
+          "hiddenMin": {
+            "executionDebt": 28
+          }
+        },
+        {
+          "allFlags": [
+            "manual_reconcile",
+            "month_end_patch"
+          ],
+          "hiddenMin": {
+            "executionDebt": 28
+          }
+        }
+      ]
     },
     "left": {
       "label": "统一机制",
@@ -1400,13 +1508,37 @@ export const chainEvents = [
     "title": "月结正式失败",
     "desc": "不是晚一点的问题，是已经没人相信这轮数了。",
     "conditions": {
-      "roundMin": 8,
-      "hiddenMin": {
-        "executionDebt": 38
-      },
-      "statMax": {
-        "team": 45
-      }
+      "alternatives": [
+        {
+          "roundMin": 8,
+          "hiddenMin": {
+            "executionDebt": 38
+          },
+          "statMax": {
+            "team": 45
+          }
+        },
+        {
+          "roundMin": 7,
+          "allFlags": [
+            "close_rush",
+            "manual_reconcile"
+          ],
+          "hiddenMin": {
+            "executionDebt": 28
+          }
+        },
+        {
+          "roundMin": 7,
+          "allFlags": [
+            "close_rush",
+            "month_end_patch"
+          ],
+          "hiddenMin": {
+            "executionDebt": 30
+          }
+        }
+      ]
     },
     "left": {
       "label": "停下来重做",
@@ -1417,8 +1549,7 @@ export const chainEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -1437,8 +1568,8 @@ export const chainEvents = [
         "team": -9
       },
       "hidden": {
-        "orgFatigue": 8,
-        "executionDebt": 4
+        "orgFatigue": 3,
+        "executionDebt": 5
       },
       "relations": {
         "hr": -4,
@@ -1464,6 +1595,22 @@ export const chainEvents = [
             "audit_entry",
             "compliance_exception"
           ]
+        },
+        {
+          "allFlags": [
+            "audit_entry"
+          ],
+          "hiddenMin": {
+            "riskExposure": 34
+          }
+        },
+        {
+          "allFlags": [
+            "compliance_exception"
+          ],
+          "hiddenMin": {
+            "riskExposure": 38
+          }
         },
         {
           "hiddenMin": {
@@ -1499,10 +1646,9 @@ export const chainEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 2,
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -1522,10 +1668,31 @@ export const chainEvents = [
     "title": "会上每个人都在讲好消息，只有你知道底下已经松了。",
     "desc": "气氛越轻松，你越清楚再不打断，后面就只会更难讲。",
     "conditions": {
-      "roundMin": 9,
-      "hiddenMin": {
-        "executionDebt": 30
-      }
+      "alternatives": [
+        {
+          "roundMin": 9,
+          "hiddenMin": {
+            "executionDebt": 30
+          }
+        },
+        {
+          "allFlags": [
+            "investor_story",
+            "meeting_rewrite"
+          ],
+          "hiddenMin": {
+            "bossDependency": 32
+          }
+        },
+        {
+          "allFlags": [
+            "shadow_committee"
+          ],
+          "hiddenMin": {
+            "politicalHeat": 34
+          }
+        }
+      ]
     },
     "left": {
       "label": "现在打断",
@@ -1553,10 +1720,9 @@ export const chainEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 2,
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -1631,12 +1797,32 @@ export const chainEvents = [
     "title": "本来是来救火的，结果这场会直接开成了追责。",
     "desc": "你心里很清楚，今天谁被留在台上，后面谁就很难再下来。",
     "conditions": {
-      "hiddenMin": {
-        "politicalHeat": 45
-      },
-      "statMin": {
-        "trust": 40
-      }
+      "alternatives": [
+        {
+          "hiddenMin": {
+            "politicalHeat": 45
+          },
+          "statMin": {
+            "trust": 40
+          }
+        },
+        {
+          "allFlags": [
+            "take_project_blame"
+          ],
+          "hiddenMin": {
+            "politicalHeat": 34
+          }
+        },
+        {
+          "allFlags": [
+            "private_chat_leak"
+          ],
+          "hiddenMin": {
+            "politicalHeat": 34
+          }
+        }
+      ]
     },
     "left": {
       "label": "保规则",
@@ -1665,10 +1851,9 @@ export const chainEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 2,
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -1688,12 +1873,40 @@ export const chainEvents = [
     "title": "法务已经亮红牌了，这事再往前就不是经营问题了。",
     "desc": "法务顾问没有抬音量，但全场都知道这次不是提醒。",
     "conditions": {
-      "hiddenMin": {
-        "riskExposure": 52
-      },
-      "relationMax": {
-        "legal": 46
-      }
+      "alternatives": [
+        {
+          "hiddenMin": {
+            "riskExposure": 52
+          },
+          "relationMax": {
+            "legal": 46
+          }
+        },
+        {
+          "allFlags": [
+            "compliance_exception"
+          ],
+          "hiddenMin": {
+            "riskExposure": 40
+          }
+        },
+        {
+          "allFlags": [
+            "favored_vendor"
+          ],
+          "hiddenMin": {
+            "riskExposure": 38
+          }
+        },
+        {
+          "allFlags": [
+            "favor_pass"
+          ],
+          "hiddenMin": {
+            "riskExposure": 34
+          }
+        }
+      ]
     },
     "left": {
       "label": "马上收口",
@@ -1745,9 +1958,25 @@ export const chainEvents = [
     "title": "之前那句没讲全的话，现在被人正面问回来了。",
     "desc": "当时省掉的一点尴尬，现在已经长成整场会的重心。",
     "conditions": {
-      "allFlags": [
-        "need_white_lie",
-        "strategy_slide_spin"
+      "alternatives": [
+        {
+          "allFlags": [
+            "need_white_lie",
+            "strategy_slide_spin"
+          ]
+        },
+        {
+          "allFlags": [
+            "need_white_lie",
+            "board_deck_polish"
+          ]
+        },
+        {
+          "allFlags": [
+            "need_white_lie",
+            "silent_fix"
+          ]
+        }
       ]
     },
     "left": {
@@ -1937,8 +2166,7 @@ export const chainEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -1956,10 +2184,10 @@ export const chainEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "executionDebt": 3,
+      "politicalHeat": 1
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -1979,9 +2207,29 @@ export const chainEvents = [
     "title": "市场上都知道你们不招了",
     "desc": "后面想再开岗，候选人会先问一句是不是又要停。",
     "conditions": {
-      "allFlags": [
-        "freeze_hiring",
-        "salary_guard"
+      "alternatives": [
+        {
+          "allFlags": [
+            "freeze_hiring",
+            "salary_guard"
+          ]
+        },
+        {
+          "allFlags": [
+            "freeze_hiring"
+          ],
+          "hiddenMin": {
+            "orgFatigue": 34
+          }
+        },
+        {
+          "allFlags": [
+            "hiring_fail"
+          ],
+          "hiddenMin": {
+            "orgFatigue": 30
+          }
+        }
       ]
     },
     "left": {
@@ -2100,10 +2348,9 @@ export const chainEvents = [
         "team": 3,
         "trust": -2
       },
-      "hidden": {
-        "politicalHeat": -3,
-        "bossDependency": -1
-      },
+    "hidden": {
+      "politicalHeat": -3,
+    },
       "relations": {
         "hr": 2,
         "boss": -1
@@ -2260,6 +2507,722 @@ export const chainEvents = [
       },
       "flags": [
         "clique_harden"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "collections_war_room",
+    "priority": 9,
+    "role": "资金经理",
+    "avatar": "📞",
+    "title": "今天开始不是做经营，是做催款。",
+    "desc": "财务、销售、法务被拉进同一个群里，大家盯着的是同一张应收表。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "keep_shipping",
+            "double_down"
+          ]
+        },
+        {
+          "allFlags": [
+            "keep_shipping",
+            "cash_probe_story"
+          ]
+        },
+        {
+          "allFlags": [
+            "delay_payroll",
+            "keep_shipping"
+          ],
+          "statMax": {
+            "cash": 26
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "全面催收",
+      "effect": {
+        "cash": 9,
+        "growth": -6,
+        "trust": -2
+      },
+      "hidden": {
+        "riskExposure": -2,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "finance": 3,
+        "sales": -3,
+        "legal": 1
+      },
+      "flags": [
+        "collections_war_room"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续拖着",
+      "effect": {
+        "growth": 4,
+        "cash": -10,
+        "trust": -2
+      },
+      "hidden": {
+        "riskExposure": 5,
+        "executionDebt": 2
+      },
+      "relations": {
+        "sales": 2,
+        "finance": -3
+      },
+      "flags": [
+        "receivable_spin"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "default_backstop",
+    "priority": 9,
+    "role": "老板助理",
+    "avatar": "🧷",
+    "title": "大家已经默认，灰区最后都会落到你这。",
+    "desc": "老板还没开口，其他人已经先把不确定的事往你这边推。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "boss_confidant",
+            "promise_patch"
+          ]
+        },
+        {
+          "allFlags": [
+            "owner_override",
+            "boss_confidant"
+          ]
+        },
+        {
+          "allFlags": [
+            "stand_side",
+            "boss_confidant"
+          ],
+          "hiddenMin": {
+            "bossDependency": 52
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "继续兜住",
+      "effect": {
+        "trust": 5,
+        "growth": 2,
+        "team": -4
+      },
+      "hidden": {
+        "bossDependency": 6,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "boss": 3,
+        "hr": -1
+      },
+      "flags": [
+        "be_backstop"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "把边界写清",
+      "effect": {
+        "trust": -4,
+        "team": 3
+      },
+      "hidden": {
+        "bossDependency": -6,
+        "dataMaturity": 2
+      },
+      "relations": {
+        "boss": -3,
+        "legal": 2
+      },
+      "flags": [
+        "boundary_reset"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "numbers_hearing",
+    "priority": 9,
+    "role": "财务总监",
+    "avatar": "🎯",
+    "title": "这次不是要版本，是要解释为什么每个版本都不一样。",
+    "desc": "会议开始对着同一个数字争来历，数字本身已经失去保护你的位置。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "forecast_patch",
+            "data_loose"
+          ]
+        },
+        {
+          "allFlags": [
+            "submit_dirty_close",
+            "data_loose"
+          ]
+        },
+        {
+          "allFlags": [
+            "forecast_patch",
+            "avoid_conflict"
+          ],
+          "hiddenMin": {
+            "executionDebt": 34
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "统一口径",
+      "effect": {
+        "trust": -3,
+        "cash": -2,
+        "team": -1
+      },
+      "hidden": {
+        "dataMaturity": 5,
+        "executionDebt": -3
+      },
+      "relations": {
+        "finance": 3,
+        "boss": -1
+      },
+      "flags": [
+        "numbers_hearing"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续圆过去",
+      "effect": {
+        "trust": 2,
+        "growth": 2
+      },
+      "hidden": {
+        "dataMaturity": -5,
+        "politicalHeat": 3,
+        "bossDependency": 2
+      },
+      "relations": {
+        "boss": 2,
+        "finance": -3
+      },
+      "flags": [
+        "spin_numbers"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "quiet_quitting",
+    "priority": 8,
+    "role": "HRD",
+    "avatar": "🫥",
+    "title": "没人提离职，但也没人真在往前推了。",
+    "desc": "会照开、活照做，只是大家都开始只做能留下痕迹的那部分。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "keep_freeze",
+            "culture_split"
+          ]
+        },
+        {
+          "allFlags": [
+            "manager_cold",
+            "burn_team"
+          ]
+        },
+        {
+          "allFlags": [
+            "lose_core",
+            "culture_split"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "补人补钱",
+      "effect": {
+        "cash": -8,
+        "team": 5,
+        "trust": 1
+      },
+      "hidden": {
+        "orgFatigue": -5,
+        "executionDebt": -2
+      },
+      "relations": {
+        "hr": 3,
+        "finance": 1
+      },
+      "flags": [
+        "thaw_team"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续压强度",
+      "effect": {
+        "cash": 3,
+        "team": -6,
+        "growth": -2
+      },
+      "hidden": {
+        "orgFatigue": 6,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "hr": -3,
+        "sales": -1
+      },
+      "flags": [
+        "quiet_quit"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "channel_revolt",
+    "priority": 8,
+    "role": "渠道经理",
+    "avatar": "📦",
+    "title": "渠道已经不等你的规则了，开始自己找活路。",
+    "desc": "价盘还挂在墙上，真实成交价已经在群里另走一套。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "channel_blind",
+            "price_war_follow"
+          ]
+        },
+        {
+          "allFlags": [
+            "channel_blind",
+            "inventory_lock"
+          ]
+        },
+        {
+          "allFlags": [
+            "price_war_follow",
+            "inventory_lock"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "强行收口",
+      "effect": {
+        "growth": -5,
+        "cash": -3,
+        "trust": -1
+      },
+      "hidden": {
+        "marginHealth": 3,
+        "customerTrust": 1
+      },
+      "relations": {
+        "sales": -2,
+        "finance": 1
+      },
+      "flags": [
+        "channel_cleanup"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "默认放开",
+      "effect": {
+        "growth": 4,
+        "cash": 2
+      },
+      "hidden": {
+        "marginHealth": -5,
+        "customerTrust": -2,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "sales": 2,
+        "finance": -2
+      },
+      "flags": [
+        "channel_freefall"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "inventory_writeoff_day",
+    "priority": 8,
+    "role": "财务经理",
+    "avatar": "🏷️",
+    "title": "这批货今天不只是占仓，要正式进减值了。",
+    "desc": "之前还可以解释成慢，现在得把损失正经写进表里。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "warehouse_pause",
+            "hold_seasonal"
+          ]
+        },
+        {
+          "allFlags": [
+            "inventory_lock",
+            "warehouse_pause"
+          ]
+        },
+        {
+          "allFlags": [
+            "seasonal_hangover",
+            "inventory_lock"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "认减值",
+      "effect": {
+        "cash": -7,
+        "trust": -2
+      },
+      "hidden": {
+        "marginHealth": 3,
+        "riskExposure": -1
+      },
+      "relations": {
+        "finance": 2,
+        "boss": -1
+      },
+      "flags": [
+        "inventory_writeoff_day"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先挪着放",
+      "effect": {
+        "cash": -2,
+        "trust": 1
+      },
+      "hidden": {
+        "executionDebt": 3,
+        "marginHealth": -4
+      },
+      "relations": {
+        "ops": 1,
+        "finance": -2
+      },
+      "flags": [
+        "stash_dead_stock"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "audit_committee",
+    "priority": 9,
+    "role": "审计经理",
+    "avatar": "🧨",
+    "title": "这事被单独拉成专项了。",
+    "desc": "它已经不是一张单子、一次解释能过的事，而是有人开始系统地看你们到底怎么做事。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "audit_spin",
+            "bury_probe"
+          ]
+        },
+        {
+          "allFlags": [
+            "ignore_legal",
+            "vendor_cover"
+          ]
+        },
+        {
+          "allFlags": [
+            "double_white_lie",
+            "audit_spin"
+          ]
+        },
+        {
+          "allFlags": [
+            "legal_red_flag",
+            "audit_spin"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "全面自查",
+      "effect": {
+        "cash": -5,
+        "trust": -3
+      },
+      "hidden": {
+        "riskExposure": -6,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "legal": 3,
+        "finance": 2
+      },
+      "flags": [
+        "audit_committee"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续灭火",
+      "effect": {
+        "trust": 1,
+        "cash": 2
+      },
+      "hidden": {
+        "riskExposure": 7,
+        "bossDependency": 2,
+        "politicalHeat": 3
+      },
+      "relations": {
+        "boss": 1,
+        "legal": -3
+      },
+      "flags": [
+        "audit_smother"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "buffer_role_reveal",
+    "priority": 8,
+    "role": "财务总监",
+    "avatar": "🪞",
+    "title": "你突然发现，大家找你的不是判断，是缓冲。",
+    "desc": "能解释的你先解释，能接住的你先接住，久了以后，大家像忘了这本来不是你的职责。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "go_explain",
+            "version_first"
+          ]
+        },
+        {
+          "allFlags": [
+            "catch_between",
+            "explain_not_decide"
+          ]
+        },
+        {
+          "allFlags": [
+            "default_receiver",
+            "seat_routine"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "继续接住",
+      "effect": {
+        "trust": 2,
+        "growth": 2,
+        "team": -3
+      },
+      "hidden": {
+        "bossDependency": 3,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "boss": 2,
+        "sales": 1
+      },
+      "flags": [
+        "be_buffer"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "把话说破",
+      "effect": {
+        "trust": -3,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 3,
+        "bossDependency": -2
+      },
+      "relations": {
+        "boss": -2,
+        "finance": 2
+      },
+      "flags": [
+        "reject_buffer"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "seat_without_power",
+    "priority": 9,
+    "role": "HRD",
+    "avatar": "🪑",
+    "title": "你坐在会上，但这个位置从来没真正把决定权给过你。",
+    "desc": "你离问题很近，离拍板却始终差着那半步。越往中间站，越像是为了替别人先接掉那一下。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "be_buffer",
+            "temporary_plug"
+          ]
+        },
+        {
+          "allFlags": [
+            "default_receiver",
+            "explain_not_decide"
+          ]
+        },
+        {
+          "allFlags": [
+            "seat_routine",
+            "go_explain"
+          ],
+          "hiddenMin": {
+            "bossDependency": 40
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "继续扛住",
+      "effect": {
+        "trust": 3,
+        "team": -4
+      },
+      "hidden": {
+        "bossDependency": 4,
+        "orgFatigue": 3
+      },
+      "relations": {
+        "boss": 2,
+        "hr": -1
+      },
+      "flags": [
+        "seat_without_power"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "不再代接",
+      "effect": {
+        "trust": -4,
+        "team": 2
+      },
+      "hidden": {
+        "bossDependency": -4,
+        "dataMaturity": 2
+      },
+      "relations": {
+        "boss": -3,
+        "legal": 1
+      },
+      "flags": [
+        "drop_buffer_mask"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "replacement_ready",
+    "priority": 9,
+    "role": "新分析师",
+    "avatar": "🗂️",
+    "title": "你第一次发现，他们已经在按这个位置的下一个人做准备了。",
+    "desc": "交接模板是现成的，口径话术是现成的，甚至连“先把这段顶过去”这句话，都像是说过不止一遍。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "seat_without_power",
+            "seat_cost"
+          ]
+        },
+        {
+          "allFlags": [
+            "be_buffer",
+            "normal_turnover",
+            "temporary_plug"
+          ]
+        },
+        {
+          "allFlags": [
+            "seat_without_power",
+            "temporary_plug"
+          ],
+          "hiddenMin": {
+            "orgFatigue": 42
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "把这轮做完",
+      "effect": {
+        "cash": 2,
+        "trust": 1,
+        "team": -3
+      },
+      "hidden": {
+        "orgFatigue": 4,
+        "bossDependency": 2
+      },
+      "relations": {
+        "boss": 1,
+        "hr": -1
+      },
+      "flags": [
+        "finish_this_turn"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "留一句真话",
+      "effect": {
+        "trust": -2,
+        "team": 2
+      },
+      "hidden": {
+        "dataMaturity": 3,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "finance": 2,
+        "hr": 1,
+        "boss": -1
+      },
+      "flags": [
+        "leave_note"
       ],
       "schedule": []
     }

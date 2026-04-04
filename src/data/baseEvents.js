@@ -209,7 +209,7 @@ export const baseEvents = [
       },
       "hidden": {
         "marginHealth": -8,
-        "customerTrust": -2
+        "customerTrust": -3
       },
       "relations": {
         "sales": 2,
@@ -233,7 +233,8 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "marginHealth": 6
+        "marginHealth": 6,
+        "customerTrust": 1
       },
       "relations": {
         "finance": 3,
@@ -394,7 +395,7 @@ export const baseEvents = [
       },
       "hidden": {
         "marginHealth": -8,
-        "customerTrust": -2
+        "customerTrust": -3
       },
       "relations": {
         "sales": 2,
@@ -403,12 +404,7 @@ export const baseEvents = [
       "flags": [
         "marketplace_coupon"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "coupon_addiction"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "不跟",
@@ -418,7 +414,8 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "marginHealth": 6
+        "marginHealth": 6,
+        "customerTrust": 1
       },
       "relations": {
         "finance": 3,
@@ -512,10 +509,9 @@ export const baseEvents = [
         "growth": 2,
         "team": -1
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 3
-      },
+    "hidden": {
+      "bossDependency": 3
+    },
       "relations": {
         "boss": 3,
         "sales": 1
@@ -531,10 +527,9 @@ export const baseEvents = [
         "trust": -3,
         "team": 4
       },
-      "hidden": {
-        "politicalHeat": -2,
-        "bossDependency": -4
-      },
+    "hidden": {
+      "bossDependency": -4
+    },
       "relations": {
         "boss": -3,
         "hr": 1
@@ -588,8 +583,7 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -6
       },
       "relations": {
         "hr": 3,
@@ -742,7 +736,7 @@ export const baseEvents = [
       },
       "hidden": {
         "marginHealth": -8,
-        "customerTrust": -2
+        "customerTrust": -3
       },
       "relations": {
         "sales": 2,
@@ -893,7 +887,7 @@ export const baseEvents = [
     "role": "销售总监",
     "avatar": "🤝",
     "title": "120 天账期，不给这单就悬了。",
-    "desc": "销售总监盯着你，像在问你到底站哪边。",
+    "desc": "销售总监盯着你，像在问你到底站哪边，也像默认业务和现金这口气最后还是会先落到你这边。",
     "tags": [
       "现金",
       "销售"
@@ -907,8 +901,8 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "riskExposure": 6,
-        "executionDebt": 2
+        "riskExposure": 7,
+        "executionDebt": 3
       },
       "relations": {
         "sales": 3,
@@ -932,8 +926,9 @@ export const baseEvents = [
         "trust": -1
       },
       "hidden": {
-        "marginHealth": 2,
-        "riskExposure": -1
+        "marginHealth": 3,
+        "riskExposure": -3,
+        "customerTrust": 1
       },
       "relations": {
         "finance": 3,
@@ -954,7 +949,7 @@ export const baseEvents = [
     "role": "采购经理",
     "avatar": "💰",
     "title": "先付 30%，不然他们这批就不排了。",
-    "desc": "采购经理把邮件转给你，像在说这笔钱今天就得出去。",
+    "desc": "采购经理把邮件转给你，像在说这笔钱今天就得出去，也像在说这份压力总得先落到某个人桌上。",
     "tags": [
       "现金",
       "库存"
@@ -967,8 +962,8 @@ export const baseEvents = [
         "cash": -10
       },
       "hidden": {
-        "riskExposure": 4,
-        "executionDebt": 3
+        "riskExposure": 5,
+        "executionDebt": 4
       },
       "relations": {
         "ops": 3,
@@ -987,8 +982,9 @@ export const baseEvents = [
         "trust": -1
       },
       "hidden": {
-        "marginHealth": 2,
-        "riskExposure": -1
+        "marginHealth": 3,
+        "riskExposure": -2,
+        "executionDebt": -1
       },
       "relations": {
         "finance": 3,
@@ -1010,7 +1006,7 @@ export const baseEvents = [
     "role": "供应链总监",
     "avatar": "🏭",
     "title": "再不结款，几家供应商真要停了。",
-    "desc": "供应链总监语气发硬，像是已经被催了很多轮。",
+    "desc": "供应链总监语气发硬，像是已经被催了很多轮，也像默认最后要把供应、现金和业务揉成一句话的人还是你。",
     "tags": [
       "现金",
       "风险"
@@ -1025,7 +1021,8 @@ export const baseEvents = [
       },
       "hidden": {
         "marginHealth": 2,
-        "riskExposure": -1
+        "riskExposure": -3,
+        "executionDebt": -1
       },
       "relations": {
         "finance": 3,
@@ -1034,12 +1031,7 @@ export const baseEvents = [
       "flags": [
         "supplier_pressure"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "supplier_lock"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "再压一压",
@@ -1049,8 +1041,9 @@ export const baseEvents = [
         "trust": -1
       },
       "hidden": {
-        "orgFatigue": 2,
-        "executionDebt": 1
+        "riskExposure": 4,
+        "politicalHeat": 1,
+        "executionDebt": 2
       },
       "relations": {
         "finance": 2,
@@ -1072,7 +1065,7 @@ export const baseEvents = [
     "role": "财务经理",
     "avatar": "💸",
     "title": "工资能发，但发完我们就只剩一口气了。",
-    "desc": "财务经理半笑不笑地看着你，等你做那个难受的决定。",
+    "desc": "财务经理半笑不笑地看着你，等你做那个难受的决定，也等你把这份难受翻成别人能先接住的话。",
     "tags": [
       "现金",
       "团队"
@@ -1085,8 +1078,9 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "riskExposure": 5,
-        "bossDependency": 2
+        "riskExposure": 6,
+        "bossDependency": 3,
+        "orgFatigue": 1
       },
       "relations": {
         "boss": 2,
@@ -1095,12 +1089,7 @@ export const baseEvents = [
       "flags": [
         "payroll_watch"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "payroll_risk"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "先控支出",
@@ -1110,8 +1099,8 @@ export const baseEvents = [
         "trust": -1
       },
       "hidden": {
-        "orgFatigue": 2,
-        "executionDebt": 1
+        "orgFatigue": 4,
+        "riskExposure": -2
       },
       "relations": {
         "finance": 2,
@@ -1133,7 +1122,7 @@ export const baseEvents = [
     "role": "应收主管",
     "avatar": "🧾",
     "title": "这家客户再拖下去，账龄就真难看了。",
-    "desc": "应收主管把名单递过来，像在提醒你别再装乐观。",
+    "desc": "应收主管把名单递过来，像在提醒你别再装乐观，也像在说这轮最先出去解释的人多半还是你。",
     "tags": [
       "现金",
       "风险"
@@ -1290,7 +1279,7 @@ export const baseEvents = [
       },
       "hidden": {
         "orgFatigue": 2,
-        "executionDebt": 1
+        "bossDependency": 1
       },
       "relations": {
         "finance": 2,
@@ -1553,10 +1542,9 @@ export const baseEvents = [
         "growth": 2,
         "team": -1
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 3
-      },
+    "hidden": {
+      "bossDependency": 3
+    },
       "relations": {
         "boss": 3,
         "sales": 1
@@ -1676,12 +1664,7 @@ export const baseEvents = [
       "flags": [
         "settlement_delay"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "settlement_mismatch"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "先停投放",
@@ -1727,8 +1710,7 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -6
       },
       "relations": {
         "hr": 3,
@@ -1747,8 +1729,8 @@ export const baseEvents = [
         "trust": -1
       },
       "hidden": {
-        "orgFatigue": 2,
-        "executionDebt": 1
+        "orgFatigue": 3,
+        "politicalHeat": 1
       },
       "relations": {
         "finance": 2,
@@ -1771,7 +1753,7 @@ export const baseEvents = [
     "role": "老板",
     "avatar": "📞",
     "title": "先给我一版能讲的，明早我就要用。",
-    "desc": "老板在电话那头没等你解释，已经默认今晚要出数。",
+    "desc": "老板在电话那头没等你解释，像已经默认这类场面最后都会由你来接。",
     "tags": [
       "老板",
       "数据"
@@ -1826,7 +1808,7 @@ export const baseEvents = [
     "role": "老板",
     "avatar": "🌙",
     "title": "今晚把全年预测重做，我明早换个说法。",
-    "desc": "老板说得很轻松，像周末和团队都不算成本。",
+    "desc": "老板说得很轻松，像你本来就该替这类临时变化把版本重新缝起来。",
     "tags": [
       "老板",
       "数据"
@@ -1849,12 +1831,7 @@ export const baseEvents = [
       "flags": [
         "overnight_forecast"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "backfill_weekend"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "明天给正式版",
@@ -1918,10 +1895,9 @@ export const baseEvents = [
         "trust": -3,
         "team": 4
       },
-      "hidden": {
-        "politicalHeat": -2,
-        "bossDependency": -4
-      },
+    "hidden": {
+      "bossDependency": -4
+    },
       "relations": {
         "boss": -3,
         "hr": 1
@@ -1951,12 +1927,14 @@ export const baseEvents = [
     "left": {
       "label": "先签",
       "effect": {
-        "trust": 7,
-        "team": -3
+        "trust": 8,
+        "team": -4,
+        "growth": 1
       },
       "hidden": {
-        "executionDebt": 3,
-        "bossDependency": 5
+        "executionDebt": 4,
+        "bossDependency": 6,
+        "riskExposure": 2
       },
       "relations": {
         "boss": 6,
@@ -1965,22 +1943,18 @@ export const baseEvents = [
       "flags": [
         "sign_fast"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "expectation_lockin"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "看完再签",
       "effect": {
-        "trust": -4,
-        "team": 2
+        "trust": -5,
+        "team": 1
       },
       "hidden": {
-        "dataMaturity": 3,
-        "bossDependency": -1
+        "dataMaturity": 4,
+        "bossDependency": -2,
+        "riskExposure": -2
       },
       "relations": {
         "boss": -4,
@@ -2001,7 +1975,7 @@ export const baseEvents = [
     "role": "老板",
     "avatar": "🏃",
     "title": "这个流程先别走了",
-    "desc": "老板说先抢窗口，流程下周再补。",
+    "desc": "老板说先抢窗口，语气里却像默认后面的解释和补洞也会一并落到你这。",
     "tags": [
       "老板",
       "合规"
@@ -2010,12 +1984,14 @@ export const baseEvents = [
     "left": {
       "label": "先冲",
       "effect": {
-        "trust": 7,
-        "team": -3
+        "trust": 8,
+        "team": -4,
+        "growth": 1
       },
       "hidden": {
-        "executionDebt": 3,
-        "bossDependency": 5
+        "executionDebt": 4,
+        "bossDependency": 6,
+        "riskExposure": 3
       },
       "relations": {
         "boss": 6,
@@ -2029,12 +2005,13 @@ export const baseEvents = [
     "right": {
       "label": "流程不能省",
       "effect": {
-        "trust": -4,
-        "team": 2
+        "trust": -5,
+        "team": 1
       },
       "hidden": {
-        "dataMaturity": 3,
-        "bossDependency": -1
+        "dataMaturity": 4,
+        "bossDependency": -2,
+        "riskExposure": -2
       },
       "relations": {
         "boss": -4,
@@ -2056,7 +2033,7 @@ export const baseEvents = [
     "role": "老板朋友",
     "avatar": "🫱",
     "title": "这个项目你先接着，都是自己人。",
-    "desc": "老板朋友笑得很自然，像回报说不清也不算问题。",
+    "desc": "老板朋友笑得很自然，像项目怎么回本说不清不重要，重要的是先有人把它接住。",
     "tags": [
       "老板",
       "政治"
@@ -2069,10 +2046,9 @@ export const baseEvents = [
         "growth": 2,
         "team": -1
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 3
-      },
+    "hidden": {
+      "bossDependency": 3
+    },
       "relations": {
         "boss": 3,
         "sales": 1
@@ -2088,10 +2064,9 @@ export const baseEvents = [
         "trust": -3,
         "team": 4
       },
-      "hidden": {
-        "politicalHeat": -2,
-        "bossDependency": -4
-      },
+    "hidden": {
+      "bossDependency": -4
+    },
       "relations": {
         "boss": -3,
         "hr": 1
@@ -2112,7 +2087,7 @@ export const baseEvents = [
     "role": "老板助理",
     "avatar": "🖼️",
     "title": "董事会材料要更好看一点",
-    "desc": "你知道“更好看”不是排版问题。",
+    "desc": "你知道“更好看”不是排版问题，而是有人希望这层不舒服先别在会上正面撞开。",
     "tags": [
       "老板",
       "政治"
@@ -2121,12 +2096,14 @@ export const baseEvents = [
     "left": {
       "label": "润色一下",
       "effect": {
-        "trust": 7,
-        "team": -3
+        "trust": 8,
+        "team": -4,
+        "growth": 1
       },
       "hidden": {
-        "executionDebt": 3,
-        "bossDependency": 5
+        "executionDebt": 4,
+        "bossDependency": 6,
+        "dataMaturity": -2
       },
       "relations": {
         "boss": 6,
@@ -2135,22 +2112,18 @@ export const baseEvents = [
       "flags": [
         "board_deck_polish"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "public_promise_gap"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "按真实口径写",
       "effect": {
-        "trust": -4,
-        "team": 2
+        "trust": -5,
+        "team": 1
       },
       "hidden": {
-        "dataMaturity": 3,
-        "bossDependency": -1
+        "dataMaturity": 5,
+        "bossDependency": -2,
+        "politicalHeat": 1
       },
       "relations": {
         "boss": -4,
@@ -2195,12 +2168,7 @@ export const baseEvents = [
       "flags": [
         "public_promise"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "public_promise_gap"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "劝他收一点",
@@ -2209,7 +2177,6 @@ export const baseEvents = [
         "team": 4
       },
       "hidden": {
-        "politicalHeat": -2,
         "bossDependency": -4
       },
       "relations": {
@@ -2245,7 +2212,6 @@ export const baseEvents = [
         "team": -1
       },
       "hidden": {
-        "politicalHeat": 2,
         "bossDependency": 3
       },
       "relations": {
@@ -2264,7 +2230,6 @@ export const baseEvents = [
         "team": 4
       },
       "hidden": {
-        "politicalHeat": -2,
         "bossDependency": -4
       },
       "relations": {
@@ -2286,7 +2251,7 @@ export const baseEvents = [
     "role": "老板",
     "avatar": "💼",
     "title": "投资人要来听故事",
-    "desc": "故事可以讲得很大，但你知道落地没那么快。",
+    "desc": "故事可以讲得很大，真正让它暂时成立的人却往往不是讲故事的那位。",
     "tags": [
       "老板",
       "增长"
@@ -2295,12 +2260,14 @@ export const baseEvents = [
     "left": {
       "label": "先把故事撑起来",
       "effect": {
-        "trust": 7,
-        "team": -3
+        "trust": 8,
+        "team": -4,
+        "growth": 1
       },
       "hidden": {
-        "executionDebt": 3,
-        "bossDependency": 5
+        "executionDebt": 4,
+        "bossDependency": 6,
+        "dataMaturity": -2
       },
       "relations": {
         "boss": 6,
@@ -2309,22 +2276,18 @@ export const baseEvents = [
       "flags": [
         "investor_story"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "investor_question"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "讲保守一点",
       "effect": {
-        "trust": -4,
-        "team": 2
+        "trust": -5,
+        "team": 1
       },
       "hidden": {
-        "dataMaturity": 3,
-        "bossDependency": -1
+        "dataMaturity": 5,
+        "bossDependency": -2,
+        "marginHealth": 1
       },
       "relations": {
         "boss": -4,
@@ -2346,7 +2309,7 @@ export const baseEvents = [
     "role": "销售总监",
     "avatar": "🪪",
     "title": "这个决策你帮老板背个书",
-    "desc": "业务想借你的专业形象把争议压过去。",
+    "desc": "业务想借你的专业形象把争议先压过去，像这件事最后本来就该由你来把话说圆。",
     "tags": [
       "老板",
       "政治"
@@ -2355,13 +2318,13 @@ export const baseEvents = [
     "left": {
       "label": "背",
       "effect": {
-        "trust": 4,
+        "trust": 5,
         "growth": 2,
-        "team": -1
+        "team": -2
       },
       "hidden": {
         "politicalHeat": 2,
-        "bossDependency": 3
+        "bossDependency": 4
       },
       "relations": {
         "boss": 3,
@@ -2375,12 +2338,14 @@ export const baseEvents = [
     "right": {
       "label": "不背",
       "effect": {
-        "trust": -3,
-        "team": 4
+        "trust": -4,
+        "team": 2,
+        "cash": -1
       },
       "hidden": {
-        "politicalHeat": -2,
-        "bossDependency": -4
+        "bossDependency": -5,
+        "politicalHeat": -1,
+        "dataMaturity": 1
       },
       "relations": {
         "boss": -3,
@@ -2402,7 +2367,7 @@ export const baseEvents = [
     "role": "老板",
     "avatar": "🚪",
     "title": "老板越过流程直接拍板",
-    "desc": "你是唯一知道后果的人，其他人都在等你表态。",
+    "desc": "你是唯一知道后果的人，其他人却都像默认了最后还是由你来把这件事接住。",
     "tags": [
       "老板",
       "政治"
@@ -2411,12 +2376,14 @@ export const baseEvents = [
     "left": {
       "label": "跟上",
       "effect": {
-        "trust": 7,
-        "team": -3
+        "trust": 8,
+        "team": -4,
+        "growth": 1
       },
       "hidden": {
-        "executionDebt": 3,
-        "bossDependency": 5
+        "executionDebt": 4,
+        "bossDependency": 6,
+        "riskExposure": 3
       },
       "relations": {
         "boss": 6,
@@ -2425,22 +2392,18 @@ export const baseEvents = [
       "flags": [
         "cross_line_approval"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "shadow_authority"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "把边界说清",
       "effect": {
-        "trust": -4,
-        "team": 2
+        "trust": -5,
+        "team": 1
       },
       "hidden": {
-        "dataMaturity": 3,
-        "bossDependency": -1
+        "dataMaturity": 4,
+        "bossDependency": -2,
+        "riskExposure": -2
       },
       "relations": {
         "boss": -4,
@@ -2463,7 +2426,7 @@ export const baseEvents = [
     "role": "老板助理",
     "avatar": "📝",
     "title": "会议纪要要改写一下",
-    "desc": "原话太直，发出去会伤人。",
+    "desc": "原话太直，发出去会伤人。老板助理说这话时，像在提醒你把冲突先翻译成版本。",
     "tags": [
       "老板",
       "政治"
@@ -2486,12 +2449,7 @@ export const baseEvents = [
       "flags": [
         "meeting_rewrite"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "rework_whiplash"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "保留原意",
@@ -2546,12 +2504,7 @@ export const baseEvents = [
       "flags": [
         "ceo_weekend_call"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "morale_dip"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "让周一再看",
@@ -2560,7 +2513,6 @@ export const baseEvents = [
         "team": 4
       },
       "hidden": {
-        "politicalHeat": -2,
         "bossDependency": -4
       },
       "relations": {
@@ -2596,7 +2548,6 @@ export const baseEvents = [
         "team": -1
       },
       "hidden": {
-        "politicalHeat": 2,
         "bossDependency": 3
       },
       "relations": {
@@ -2615,7 +2566,6 @@ export const baseEvents = [
         "team": 4
       },
       "hidden": {
-        "politicalHeat": -2,
         "bossDependency": -4
       },
       "relations": {
@@ -2638,7 +2588,7 @@ export const baseEvents = [
     "role": "HRBP",
     "avatar": "🧑‍💼",
     "title": "先把招聘停了，不然现金顶不住。",
-    "desc": "HRBP知道你会难受，但还是把这句话递到了你面前。",
+    "desc": "HRBP知道这话最后会先压到你这，所以递给你时语气比平时更轻。",
     "tags": [
       "团队",
       "现金"
@@ -2647,12 +2597,12 @@ export const baseEvents = [
     "left": {
       "label": "停",
       "effect": {
-        "cash": 7,
-        "team": -9
+        "cash": 8,
+        "team": -10
       },
       "hidden": {
-        "orgFatigue": 8,
-        "executionDebt": 4
+        "orgFatigue": 9,
+        "executionDebt": 1
       },
       "relations": {
         "hr": -4,
@@ -2661,23 +2611,19 @@ export const baseEvents = [
       "flags": [
         "freeze_hiring"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "capacity_gap"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "继续招",
       "effect": {
-        "team": 6,
-        "cash": -5,
+        "team": 4,
+        "cash": -6,
         "growth": 3
       },
       "hidden": {
         "dataMaturity": 2,
-        "orgFatigue": -2
+        "orgFatigue": -3,
+        "executionDebt": -1
       },
       "relations": {
         "hr": 2,
@@ -2699,7 +2645,7 @@ export const baseEvents = [
     "role": "财务BP",
     "avatar": "😮‍💨",
     "title": "大家已经连着熬两周了，再这么顶真要出事。",
-    "desc": "财务BP声音压得很低，像是不想把疲惫说得太明显。",
+    "desc": "财务BP声音压得很低，像已经习惯先把快炸开的那部分只递给你听。",
     "tags": [
       "团队",
       "执行"
@@ -2714,7 +2660,7 @@ export const baseEvents = [
       },
       "hidden": {
         "orgFatigue": -6,
-        "executionDebt": -2
+        "executionDebt": -1
       },
       "relations": {
         "hr": 3,
@@ -2733,7 +2679,7 @@ export const baseEvents = [
       },
       "hidden": {
         "orgFatigue": 8,
-        "executionDebt": 4
+        "executionDebt": 1
       },
       "relations": {
         "hr": -4,
@@ -2742,12 +2688,7 @@ export const baseEvents = [
       "flags": [
         "burn_team"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "resignation_wave"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -2774,8 +2715,7 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -6
       },
       "relations": {
         "hr": 3,
@@ -2815,7 +2755,7 @@ export const baseEvents = [
     "role": "HRD",
     "avatar": "📊",
     "title": "绩效要拉开吗？",
-    "desc": "如果真拉开，几个中层可能会一起炸。",
+    "desc": "如果真拉开，几个中层可能会一起炸。HRD问你时，更像在问这波情绪准备先落到谁身上。",
     "tags": [
       "团队",
       "政治"
@@ -2824,13 +2764,14 @@ export const baseEvents = [
     "left": {
       "label": "拉开",
       "effect": {
-        "team": 6,
-        "cash": -5,
+        "team": 4,
+        "cash": -6,
         "growth": 3
       },
       "hidden": {
         "dataMaturity": 2,
-        "orgFatigue": -2
+        "orgFatigue": -3,
+        "politicalHeat": -1
       },
       "relations": {
         "hr": 2,
@@ -2844,12 +2785,13 @@ export const baseEvents = [
     "right": {
       "label": "先缓一季",
       "effect": {
-        "cash": 4,
-        "team": -4,
+        "cash": 5,
+        "team": -5,
         "growth": -2
       },
       "hidden": {
-        "orgFatigue": 3
+        "orgFatigue": 4,
+        "politicalHeat": 1
       },
       "relations": {
         "hr": -2,
@@ -2858,12 +2800,7 @@ export const baseEvents = [
       "flags": [
         "performance_delay"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "manager_trust_drop"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -2875,7 +2812,7 @@ export const baseEvents = [
     "role": "业务负责人",
     "avatar": "🪢",
     "title": "这个 HC 必须给业务",
-    "desc": "大家都说自己最急，预算却只剩一个坑。",
+    "desc": "大家都说自己最急，预算却只剩一个坑，最后还是等你来给一个谁都能先吞下去的版本。",
     "tags": [
       "团队",
       "政治"
@@ -2932,7 +2869,7 @@ export const baseEvents = [
     "role": "中层经理",
     "avatar": "🧱",
     "title": "这事真不是我这边的问题。",
-    "desc": "中层经理们轮着开口，整场会像一场自保表演。",
+    "desc": "中层经理们轮着开口，整场会像一场自保表演，而你又被自然地摆在了中间。",
     "tags": [
       "团队",
       "政治"
@@ -2964,10 +2901,9 @@ export const baseEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 2,
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -3002,8 +2938,8 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -4,
+        "politicalHeat": -3
       },
       "relations": {
         "hr": 3,
@@ -3068,12 +3004,7 @@ export const baseEvents = [
       "flags": [
         "hiring_fail"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "recruiting_miss"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "继续守价",
@@ -3119,8 +3050,8 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -4,
+        "politicalHeat": -2
       },
       "relations": {
         "hr": 3,
@@ -3161,7 +3092,7 @@ export const baseEvents = [
     "role": "HRBP",
     "avatar": "💼",
     "title": "新人比老人开得高，下面已经有人炸了。",
-    "desc": "HRBP摊开名单，像在提醒你这事压不住了。",
+    "desc": "HRBP摊开名单，像在提醒你这事压不住了，最后还得你给出一个大家暂时还能忍的解释。",
     "tags": [
       "团队",
       "现金"
@@ -3176,7 +3107,7 @@ export const baseEvents = [
       },
       "hidden": {
         "orgFatigue": -6,
-        "executionDebt": -2
+        "politicalHeat": -2
       },
       "relations": {
         "hr": 3,
@@ -3196,7 +3127,7 @@ export const baseEvents = [
       },
       "hidden": {
         "orgFatigue": 2,
-        "executionDebt": 1
+        "politicalHeat": 2
       },
       "relations": {
         "finance": 2,
@@ -3251,8 +3182,7 @@ export const baseEvents = [
         "trust": -1
       },
       "hidden": {
-        "orgFatigue": 2,
-        "executionDebt": 1
+        "orgFatigue": 2
       },
       "relations": {
         "finance": 2,
@@ -3273,7 +3203,7 @@ export const baseEvents = [
     "role": "财务共享负责人",
     "avatar": "🧾",
     "title": "要不要把一些活转共享中心？",
-    "desc": "标准化会更好，但前面磨合会很痛。",
+    "desc": "标准化会更好，但前面磨合会很痛，而第一波抱怨大概率还是会先流到你这边。",
     "tags": [
       "团队",
       "系统"
@@ -3329,7 +3259,7 @@ export const baseEvents = [
     "role": "运营总监",
     "avatar": "⚔️",
     "title": "业务和财务又顶起来了",
-    "desc": "谁都觉得自己是为了公司好。",
+    "desc": "谁都觉得自己是为了公司好，也都默认最后会有人站到中间把这场架翻译成一个还能推进的版本。",
     "tags": [
       "团队",
       "政治"
@@ -3361,10 +3291,9 @@ export const baseEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 2,
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -3409,12 +3338,7 @@ export const baseEvents = [
       "flags": [
         "new_manager_onboard"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "onboarding_slip"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "先观察",
@@ -3447,7 +3371,7 @@ export const baseEvents = [
     "role": "老板",
     "avatar": "🗓️",
     "title": "周末加班要不要默认化？",
-    "desc": "短期效率会高，组织感受会很差。",
+    "desc": "短期效率会高，组织感受会很差，老板其实也是在看这句最难听的话最后由谁去落地。",
     "tags": [
       "团队",
       "老板"
@@ -3461,7 +3385,7 @@ export const baseEvents = [
       },
       "hidden": {
         "orgFatigue": 8,
-        "executionDebt": 4
+        "executionDebt": 1
       },
       "relations": {
         "hr": -4,
@@ -3470,12 +3394,7 @@ export const baseEvents = [
       "flags": [
         "weekend_overtime"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "overtime_backlash"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "设边界",
@@ -3485,8 +3404,7 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -6
       },
       "relations": {
         "hr": 3,
@@ -3522,7 +3440,7 @@ export const baseEvents = [
       },
       "hidden": {
         "marginHealth": -8,
-        "customerTrust": -2
+        "customerTrust": -3
       },
       "relations": {
         "sales": 2,
@@ -3531,12 +3449,7 @@ export const baseEvents = [
       "flags": [
         "heavy_discount"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "margin_reckoning"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "不降",
@@ -3546,7 +3459,8 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "marginHealth": 6
+        "marginHealth": 6,
+        "customerTrust": 1
       },
       "relations": {
         "finance": 3,
@@ -3569,7 +3483,7 @@ export const baseEvents = [
     "role": "区域销售",
     "avatar": "🚗",
     "title": "不给返点，这波货经销商就不推了。",
-    "desc": "区域销售把压力原封不动地送到了你桌上。",
+    "desc": "区域销售把压力原封不动地送到了你桌上，像渠道、利润和关系总得先在你这里压成一个决定。",
     "tags": [
       "利润质量",
       "增长"
@@ -3583,7 +3497,7 @@ export const baseEvents = [
       },
       "hidden": {
         "marginHealth": -8,
-        "customerTrust": -2
+        "customerTrust": -3
       },
       "relations": {
         "sales": 2,
@@ -3592,12 +3506,7 @@ export const baseEvents = [
       "flags": [
         "channel_rebate"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "rebate_reconciliation"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "不给",
@@ -3607,7 +3516,9 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "marginHealth": 6
+        "marginHealth": 6,
+        "customerTrust": 1,
+        "riskExposure": -1
       },
       "relations": {
         "finance": 3,
@@ -3643,7 +3554,7 @@ export const baseEvents = [
       },
       "hidden": {
         "marginHealth": -8,
-        "customerTrust": -2
+        "customerTrust": -3
       },
       "relations": {
         "sales": 2,
@@ -3662,7 +3573,8 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "marginHealth": 6
+        "marginHealth": 6,
+        "customerTrust": 1
       },
       "relations": {
         "finance": 3,
@@ -3684,7 +3596,7 @@ export const baseEvents = [
     "role": "平台运营",
     "avatar": "🧾",
     "title": "平台抽佣又涨了，这口我们吃还是客户吃？",
-    "desc": "平台运营盯着费率表，等你先认哪边疼。",
+    "desc": "平台运营盯着费率表，等你先认哪边疼，也等你先决定这次由谁来吞下第一口不舒服。",
     "tags": [
       "利润质量",
       "增长"
@@ -3698,7 +3610,8 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "marginHealth": 6
+        "marginHealth": 6,
+        "customerTrust": 1
       },
       "relations": {
         "finance": 3,
@@ -3717,7 +3630,7 @@ export const baseEvents = [
       },
       "hidden": {
         "marginHealth": -8,
-        "customerTrust": -2
+        "customerTrust": -3
       },
       "relations": {
         "sales": 2,
@@ -3726,12 +3639,7 @@ export const baseEvents = [
       "flags": [
         "absorb_fee"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "fee_spike_followup"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -3798,7 +3706,7 @@ export const baseEvents = [
     "role": "售后负责人",
     "avatar": "🛠️",
     "title": "返修越来越贵了，再这么修下去不对劲。",
-    "desc": "售后负责人把成本表递过来，像终于憋不住了。",
+    "desc": "售后负责人把成本表递过来，像终于憋不住了，也像在提醒这口质量后账不能总靠你来解释成阶段性波动。",
     "tags": [
       "利润质量",
       "客户"
@@ -3841,12 +3749,7 @@ export const baseEvents = [
       "flags": [
         "return_repair_cost"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "repair_cost_creep"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -4102,12 +4005,7 @@ export const baseEvents = [
       "flags": [
         "clearance_trade"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "clearance_habit"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "小范围做",
@@ -4273,12 +4171,7 @@ export const baseEvents = [
       "flags": [
         "price_protection"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "price_protection_hit"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "不给",
@@ -4333,12 +4226,7 @@ export const baseEvents = [
       "flags": [
         "custom_project_margin"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "project_margin_slip"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "不接",
@@ -4370,7 +4258,7 @@ export const baseEvents = [
     "role": "仓储经理",
     "avatar": "📦",
     "title": "这批货得先压，不然下月就要断。",
-    "desc": "仓储经理语气很急，像断货已经在路上。",
+    "desc": "仓储经理语气很急，像断货已经在路上，也像默认库存和现金打架时总得先由你来拍那个难看的板。",
     "tags": [
       "库存",
       "现金"
@@ -4430,7 +4318,7 @@ export const baseEvents = [
     "role": "仓库主管",
     "avatar": "🔥",
     "title": "再不给我补货，这个爆款今晚就见底了。",
-    "desc": "仓库主管盯着库存表，话里都是火气。",
+    "desc": "仓库主管盯着库存表，话里都是火气，也像知道这股火最后还是会先烧到你这边。",
     "tags": [
       "库存",
       "增长"
@@ -4489,7 +4377,7 @@ export const baseEvents = [
     "role": "采购经理",
     "avatar": "🚚",
     "title": "要快就只能空运，这笔钱你认不认？",
-    "desc": "采购经理摊开时效表，像已经替你把痛点算好了。",
+    "desc": "采购经理摊开时效表，像已经替你把痛点算好了，也像在等你决定这次是谁先替这周的体面付钱。",
     "tags": [
       "库存",
       "现金"
@@ -4548,7 +4436,7 @@ export const baseEvents = [
     "role": "商品经理",
     "avatar": "🧱",
     "title": "这些货再不处理，就真要烂在仓里了。",
-    "desc": "商品经理说得很直接，像终于没人愿意继续装看不见。",
+    "desc": "商品经理说得很直接，像终于没人愿意继续装看不见，也像在等你把这份损失翻成一个大家还能接受的动作。",
     "tags": [
       "库存",
       "利润质量"
@@ -4740,12 +4628,7 @@ export const baseEvents = [
       "flags": [
         "warehouse_transfer"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "warehouse_congestion"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "先别动",
@@ -4857,12 +4740,7 @@ export const baseEvents = [
       "flags": [
         "supplier_moq"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "moq_cash_drag"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "换供应商",
@@ -5018,8 +4896,7 @@ export const baseEvents = [
         "trust": 1
       },
       "hidden": {
-        "orgFatigue": -6,
-        "executionDebt": -2
+        "orgFatigue": -5
       },
       "relations": {
         "hr": 3,
@@ -5073,8 +4950,7 @@ export const baseEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -5224,7 +5100,7 @@ export const baseEvents = [
     "role": "IT负责人",
     "avatar": "💻",
     "title": "这笔系统费现在不花，后面大家都得拿命补。",
-    "desc": "IT负责人难得把话说重，像是已经忍了很久。",
+    "desc": "IT负责人难得把话说重，像是已经忍了很久，也像在提醒你后面补的不会只是系统，还是你和团队的夜晚。",
     "tags": [
       "系统",
       "数据"
@@ -5233,13 +5109,13 @@ export const baseEvents = [
     "left": {
       "label": "上",
       "effect": {
-        "team": 4,
-        "trust": 3,
-        "cash": -7
+        "team": 1,
+        "trust": 0,
+        "cash": -8
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
+        "executionDebt": -6,
         "orgFatigue": -1
       },
       "relations": {
@@ -5255,12 +5131,14 @@ export const baseEvents = [
     "right": {
       "label": "缓",
       "effect": {
-        "cash": 4,
-        "team": -3
+        "cash": 5,
+        "team": -2,
+        "trust": 1
       },
       "hidden": {
-        "executionDebt": 6,
-        "dataMaturity": -2
+        "executionDebt": 7,
+        "dataMaturity": -3,
+        "orgFatigue": 1
       },
       "relations": {
         "ops": -2,
@@ -5282,7 +5160,7 @@ export const baseEvents = [
     "role": "运营负责人",
     "avatar": "🧮",
     "title": "两套数谁都不服谁，经营会到底按哪套讲？",
-    "desc": "运营负责人把矛盾直接摊开，不想再替任何人圆。",
+    "desc": "运营负责人把矛盾直接摊开，不想再替任何人圆，也不想这件事最后又只剩你去定一版能带进会里的数。",
     "tags": [
       "数据",
       "政治"
@@ -5291,11 +5169,11 @@ export const baseEvents = [
     "left": {
       "label": "统一口径",
       "effect": {
-        "trust": 4,
-        "team": -2
+        "trust": -2,
+        "team": 1
       },
       "hidden": {
-        "dataMaturity": 6,
+        "dataMaturity": 8,
         "politicalHeat": 2
       },
       "relations": {
@@ -5310,13 +5188,13 @@ export const baseEvents = [
     "right": {
       "label": "先各说各的",
       "effect": {
-        "trust": -4,
+        "trust": 1,
         "growth": 1
       },
       "hidden": {
-        "executionDebt": 4,
+        "executionDebt": 5,
         "politicalHeat": 4,
-        "dataMaturity": -3
+        "dataMaturity": -4
       },
       "relations": {
         "finance": -3,
@@ -5325,12 +5203,7 @@ export const baseEvents = [
       "flags": [
         "avoid_conflict"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "data_credibility_hit"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -5351,13 +5224,13 @@ export const baseEvents = [
     "left": {
       "label": "补资源重做",
       "effect": {
-        "team": 4,
-        "trust": 3,
-        "cash": -7
+        "team": 1,
+        "trust": 0,
+        "cash": -8
       },
       "hidden": {
-        "dataMaturity": 10,
-        "executionDebt": -4,
+        "dataMaturity": 9,
+        "executionDebt": -5,
         "orgFatigue": -1
       },
       "relations": {
@@ -5368,22 +5241,19 @@ export const baseEvents = [
       "flags": [
         "dashboard_delay"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "dashboard_blindspot"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "先容忍",
       "effect": {
-        "cash": 4,
-        "team": -3
+        "cash": 5,
+        "team": -2,
+        "trust": 1
       },
       "hidden": {
         "executionDebt": 6,
-        "dataMaturity": -2
+        "dataMaturity": -3,
+        "orgFatigue": 1
       },
       "relations": {
         "ops": -2,
@@ -5405,7 +5275,7 @@ export const baseEvents = [
     "role": "财务经理",
     "avatar": "📚",
     "title": "月结要来不及了",
-    "desc": "单据和口径都还在飞，时间却只剩两天。",
+    "desc": "单据和口径都还在飞，时间却只剩两天，像所有本该正面解决的问题最后都会先压成你的夜晚。",
     "tags": [
       "数据",
       "团队"
@@ -5414,14 +5284,14 @@ export const baseEvents = [
     "left": {
       "label": "砍范围保质量",
       "effect": {
-        "team": 4,
-        "trust": 3,
-        "cash": -7
+        "team": 1,
+        "trust": -2,
+        "cash": -8
       },
       "hidden": {
-        "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "dataMaturity": 9,
+        "executionDebt": -5,
+        "orgFatigue": -2
       },
       "relations": {
         "ops": 2,
@@ -5431,22 +5301,19 @@ export const baseEvents = [
       "flags": [
         "close_rush"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "close_delay"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "大家再冲一下",
       "effect": {
-        "cash": 4,
-        "team": -3
+        "cash": 6,
+        "team": -4,
+        "trust": 1
       },
       "hidden": {
-        "executionDebt": 6,
-        "dataMaturity": -2
+        "executionDebt": 7,
+        "dataMaturity": -3,
+        "orgFatigue": 3
       },
       "relations": {
         "ops": -2,
@@ -5467,7 +5334,7 @@ export const baseEvents = [
     "role": "财务分析师",
     "avatar": "❗",
     "title": "上周那版报表有错，有人已经按它拍板了。",
-    "desc": "财务分析师把更正发你之前，自己先沉默了两秒。",
+    "desc": "财务分析师把更正发你之前先沉默了两秒，像已经知道最后第一个出去解释的人不会是拍板的人。",
     "tags": [
       "数据",
       "老板"
@@ -5476,11 +5343,11 @@ export const baseEvents = [
     "left": {
       "label": "马上更正",
       "effect": {
-        "trust": 4,
-        "team": -2
+        "trust": -3,
+        "team": 1
       },
       "hidden": {
-        "dataMaturity": 6,
+        "dataMaturity": 8,
         "politicalHeat": 2
       },
       "relations": {
@@ -5495,13 +5362,13 @@ export const baseEvents = [
     "right": {
       "label": "先悄悄改",
       "effect": {
-        "trust": -4,
+        "trust": 1,
         "growth": 1
       },
       "hidden": {
-        "executionDebt": 4,
+        "executionDebt": 5,
         "politicalHeat": 4,
-        "dataMaturity": -3
+        "dataMaturity": -4
       },
       "relations": {
         "finance": -3,
@@ -5510,12 +5377,7 @@ export const baseEvents = [
       "flags": [
         "silent_fix"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "credibility_loss"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -5527,7 +5389,7 @@ export const baseEvents = [
     "role": "财务共享",
     "avatar": "🧾",
     "title": "又要手工对账",
-    "desc": "系统没打通，很多表只能靠人一点点抹平。",
+    "desc": "系统没打通，很多表只能靠人一点点抹平，而这类缝最后总会被默认为该由你先补上。",
     "tags": [
       "数据",
       "团队"
@@ -5536,13 +5398,13 @@ export const baseEvents = [
     "left": {
       "label": "补接口",
       "effect": {
-        "team": 4,
-        "trust": 3,
-        "cash": -7
+        "team": 1,
+        "trust": -1,
+        "cash": -8
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
+        "executionDebt": -6,
         "orgFatigue": -1
       },
       "relations": {
@@ -5553,22 +5415,19 @@ export const baseEvents = [
       "flags": [
         "manual_reconcile"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "reconciliation_fatigue"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "继续手工",
       "effect": {
-        "cash": 4,
-        "team": -3
+        "cash": 5,
+        "team": -2,
+        "trust": 1
       },
       "hidden": {
-        "executionDebt": 6,
-        "dataMaturity": -2
+        "executionDebt": 7,
+        "dataMaturity": -3,
+        "orgFatigue": 2
       },
       "relations": {
         "ops": -2,
@@ -5659,8 +5518,7 @@ export const baseEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -5727,12 +5585,7 @@ export const baseEvents = [
       "flags": [
         "month_end_patch"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "excel_version_sprawl"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "不补，改流程",
@@ -5743,8 +5596,7 @@ export const baseEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -5838,8 +5690,7 @@ export const baseEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -5951,8 +5802,7 @@ export const baseEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -5962,12 +5812,7 @@ export const baseEvents = [
       "flags": [
         "data_permission"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "permission_breach"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "先不动",
@@ -6069,8 +5914,7 @@ export const baseEvents = [
       },
       "hidden": {
         "dataMaturity": 10,
-        "executionDebt": -4,
-        "orgFatigue": -1
+        "executionDebt": -5
       },
       "relations": {
         "ops": 2,
@@ -6080,12 +5924,7 @@ export const baseEvents = [
       "flags": [
         "erp_cutover"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "erp_cutover_noise"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "再拖一季",
@@ -6116,7 +5955,7 @@ export const baseEvents = [
     "role": "老板",
     "avatar": "🎯",
     "title": "今天预算会，多半会先问到你。",
-    "desc": "老板提前递了句话，像提醒，也像甩锅前的铺垫。",
+    "desc": "老板提前递了句话，像提醒，也像在告诉你今天第一个要站出来接场面的还是你。",
     "tags": [
       "政治",
       "老板"
@@ -6148,10 +5987,9 @@ export const baseEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 2,
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -6198,12 +6036,7 @@ export const baseEvents = [
       "flags": [
         "audit_entry"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "audit_followup"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "先稳住现场",
@@ -6237,7 +6070,7 @@ export const baseEvents = [
     "role": "项目经理",
     "avatar": "🧨",
     "title": "这事明明不是财务拍的，最后又要你去解释。",
-    "desc": "项目经理摊了摊手，像已经默认锅会落到你这。",
+    "desc": "项目经理摊了摊手，像已经默认这家公司里总得有人先把不属于自己的后果接回去。",
     "tags": [
       "政治",
       "老板"
@@ -6269,10 +6102,9 @@ export const baseEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 2,
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -6281,12 +6113,7 @@ export const baseEvents = [
       "flags": [
         "take_project_blame"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "blame_sticks"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -6298,7 +6125,7 @@ export const baseEvents = [
     "role": "老板助理",
     "avatar": "🎤",
     "title": "老板不在，你来替他讲",
-    "desc": "会上的火力不会因为人不在就减弱。",
+    "desc": "会上的火力不会因为人不在就减弱，大家只是很自然地默认那层火先落到你这边。",
     "tags": [
       "政治",
       "老板"
@@ -6331,10 +6158,9 @@ export const baseEvents = [
         "cash": 3,
         "trust": -4
       },
-      "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 2,
+    },
       "relations": {
         "boss": 1,
         "finance": -2,
@@ -6356,7 +6182,7 @@ export const baseEvents = [
     "role": "业务总监",
     "avatar": "🫳",
     "title": "流程太慢了，这锅别先扣业务头上。",
-    "desc": "业务总监先把防线立好，再等你接不接这句话。",
+    "desc": "业务总监先把防线立好，再等你接不接这句话，像这个中间层本来就该先替谁都不想要的部分兜一下。",
     "tags": [
       "政治",
       "团队"
@@ -6413,7 +6239,7 @@ export const baseEvents = [
     "role": "老板",
     "avatar": "🕴️",
     "title": "有些事会外先定，会里只是走一遍。",
-    "desc": "老板把话说得很淡，像规则本来就该这样弯着来。",
+    "desc": "老板把话说得很淡，像规则本来就该这样弯着来，而最后把这层弯绕翻译成可执行版本的人还是你。",
     "tags": [
       "政治",
       "老板"
@@ -6438,12 +6264,7 @@ export const baseEvents = [
       "flags": [
         "shadow_committee"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "political_heatwave"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "把规则摊开",
@@ -6489,8 +6310,7 @@ export const baseEvents = [
         "trust": -4
       },
       "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
+        "politicalHeat": 2
       },
       "relations": {
         "boss": 1,
@@ -6615,12 +6435,7 @@ export const baseEvents = [
       "flags": [
         "compliance_exception"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "compliance_heat"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "不走这个口子",
@@ -6685,8 +6500,7 @@ export const baseEvents = [
         "trust": -4
       },
       "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
+        "politicalHeat": 2
       },
       "relations": {
         "boss": 1,
@@ -6709,7 +6523,7 @@ export const baseEvents = [
     "role": "采购经理",
     "avatar": "🎁",
     "title": "这家先别动，上面有人看着。",
-    "desc": "采购经理把声音压低，像比价格更硬的是关系。",
+    "desc": "采购经理把声音压低，像比价格更硬的是关系，而比关系更稳的是最后总有人会先替这件事找个说法。",
     "tags": [
       "政治",
       "合规"
@@ -6733,12 +6547,7 @@ export const baseEvents = [
       "flags": [
         "favored_vendor"
       ],
-      "schedule": [
-        {
-          "after": 4,
-          "type": "vendor_question"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "先照旧用",
@@ -6804,8 +6613,7 @@ export const baseEvents = [
         "trust": -4
       },
       "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
+        "politicalHeat": 2
       },
       "relations": {
         "boss": 1,
@@ -6852,12 +6660,7 @@ export const baseEvents = [
       "flags": [
         "need_white_lie"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "white_lie_interest"
-        }
-      ]
+      "schedule": []
     },
     "right": {
       "label": "必须讲",
@@ -6981,8 +6784,7 @@ export const baseEvents = [
         "trust": -4
       },
       "hidden": {
-        "politicalHeat": 2,
-        "bossDependency": 2
+        "politicalHeat": 2
       },
       "relations": {
         "boss": 1,
@@ -7051,12 +6853,7 @@ export const baseEvents = [
       "flags": [
         "office_romance_ignored"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "office_romance_escalates"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -7113,12 +6910,7 @@ export const baseEvents = [
       "flags": [
         "vendor_dinner"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "vendor_dinner_photo"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -7163,10 +6955,9 @@ export const baseEvents = [
         "trust": 2,
         "team": -3
       },
-      "hidden": {
-        "politicalHeat": 5,
-        "bossDependency": 2
-      },
+    "hidden": {
+      "politicalHeat": 5,
+    },
       "relations": {
         "boss": 1,
         "hr": -2
@@ -7174,12 +6965,7 @@ export const baseEvents = [
       "flags": [
         "promotion_rigged"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "promotion_grievance"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -7237,12 +7023,7 @@ export const baseEvents = [
       "flags": [
         "nepotism_hire"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "referral_backfire"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -7297,12 +7078,7 @@ export const baseEvents = [
       "flags": [
         "clique_tolerated"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "clique_backlash"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -7315,7 +7091,7 @@ export const baseEvents = [
     "role": "老板助理",
     "avatar": "📲",
     "title": "老板没说的话，助理先替他答应出去了。",
-    "desc": "问题不只是答应了什么，而是以后谁都不知道边界到底在哪。",
+    "desc": "问题不只是答应了什么，而是现场所有人都像默认后面会由你来把边界补回去。",
     "tags": [
       "老板",
       "政治"
@@ -7357,12 +7133,7 @@ export const baseEvents = [
       "flags": [
         "assistant_override"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "assistant_overreach_cost"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -7375,7 +7146,7 @@ export const baseEvents = [
     "role": "财务BP",
     "avatar": "💬",
     "title": "你私下说的那句抱怨，今天已经传到业务那边了。",
-    "desc": "话不算重，但从私下走到公开以后，性质就变了。",
+    "desc": "话不算重，但从私下走到公开以后，像所有人都在等你再把它翻译成一个还能继续共事的版本。",
     "tags": [
       "政治",
       "团队"
@@ -7415,12 +7186,7 @@ export const baseEvents = [
       "flags": [
         "private_chat_leak"
       ],
-      "schedule": [
-        {
-          "after": 2,
-          "type": "gossip_spread"
-        }
-      ]
+      "schedule": []
     }
   },
   {
@@ -7465,11 +7231,10 @@ export const baseEvents = [
         "cash": -2,
         "trust": 2
       },
-      "hidden": {
-        "riskExposure": 4,
-        "bossDependency": 2,
-        "politicalHeat": 3
-      },
+    "hidden": {
+      "riskExposure": 4,
+      "politicalHeat": 3
+    },
       "relations": {
         "sales": 1,
         "finance": -2
@@ -7477,12 +7242,451 @@ export const baseEvents = [
       "flags": [
         "favor_pass"
       ],
-      "schedule": [
-        {
-          "after": 3,
-          "type": "favor_receipt"
-        }
-      ]
+      "schedule": []
+    }
+  },
+  {
+    "id": "who_should_say_it",
+    "phase": [
+      "early",
+      "mid"
+    ],
+    "weight": 4,
+    "role": "业务负责人",
+    "avatar": "🗣️",
+    "title": "这话你去说，比我去说更容易被他们听进去。",
+    "desc": "他嘴上像是在抬你，实际是把本该自己接的那口气递到了你手里。",
+    "tags": [
+      "老板",
+      "政治",
+      "团队"
+    ],
+    "pack": "暗线",
+    "left": {
+      "label": "我去说",
+      "effect": {
+        "growth": 2,
+        "trust": 1,
+        "team": -1
+      },
+      "hidden": {
+        "politicalHeat": 2,
+        "bossDependency": 1
+      },
+      "relations": {
+        "sales": 2,
+        "finance": -1
+      },
+      "flags": [
+        "go_explain"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "你自己说",
+      "effect": {
+        "growth": -2,
+        "trust": -1
+      },
+      "hidden": {
+        "dataMaturity": 2
+      },
+      "relations": {
+        "sales": -1,
+        "finance": 1
+      },
+      "flags": [
+        "return_conflict"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "version_not_truth",
+    "phase": [
+      "early",
+      "mid"
+    ],
+    "weight": 4,
+    "role": "老板",
+    "avatar": "📝",
+    "title": "先别争是不是最准，你先给我一个能往下推的版本。",
+    "desc": "老板没有问这版是不是最对，只问今天能不能拿得出手。",
+    "tags": [
+      "老板",
+      "数据"
+    ],
+    "pack": "暗线",
+    "left": {
+      "label": "先给版本",
+      "effect": {
+        "trust": 3,
+        "team": -1
+      },
+      "hidden": {
+        "executionDebt": 2,
+        "bossDependency": 2
+      },
+      "relations": {
+        "boss": 2,
+        "finance": -1
+      },
+      "flags": [
+        "version_first"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先讲问题",
+      "effect": {
+        "trust": -2,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 3,
+        "bossDependency": -1
+      },
+      "relations": {
+        "boss": -1,
+        "finance": 1
+      },
+      "flags": [
+        "truth_first"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "no_head_on_collision",
+    "phase": [
+      "early",
+      "mid"
+    ],
+    "weight": 3,
+    "role": "HRBP",
+    "avatar": "🪢",
+    "title": "销售和财务今天最好别同场，你先两边都接一下。",
+    "desc": "你被放在中间，不是因为权力最大，而是因为大家默认你最适合接住场面。",
+    "tags": [
+      "团队",
+      "政治"
+    ],
+    "pack": "暗线",
+    "left": {
+      "label": "我先接住",
+      "effect": {
+        "team": 1,
+        "trust": 1
+      },
+      "hidden": {
+        "orgFatigue": 2,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "hr": 2,
+        "sales": 1,
+        "finance": 1
+      },
+      "flags": [
+        "catch_between"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "让他们直谈",
+      "effect": {
+        "team": -2,
+        "trust": -1
+      },
+      "hidden": {
+        "dataMaturity": 2,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "hr": -1,
+        "sales": -1,
+        "finance": 1
+      },
+      "flags": [
+        "force_faceoff"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "you_explain_again",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 4,
+    "role": "财务总监",
+    "avatar": "📍",
+    "title": "方案不是你拍的，但会后还是得你去解释。",
+    "desc": "你开始隐约感觉，自己参与得很多，但真正能决定的东西并没有变多。",
+    "tags": [
+      "老板",
+      "政治",
+      "数据"
+    ],
+    "pack": "暗线",
+    "left": {
+      "label": "我来解释",
+      "effect": {
+        "trust": 2,
+        "team": -1
+      },
+      "hidden": {
+        "bossDependency": 2,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "boss": 1,
+        "finance": 1
+      },
+      "flags": [
+        "explain_not_decide"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "谁拍谁解释",
+      "effect": {
+        "trust": -2,
+        "team": 1
+      },
+      "hidden": {
+        "politicalHeat": 2,
+        "dataMaturity": 1
+      },
+      "relations": {
+        "boss": -1,
+        "finance": 1
+      },
+      "flags": [
+        "name_decider"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "old_hand_reaction",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 3,
+    "role": "老运营",
+    "avatar": "👀",
+    "title": "他看着你忙前忙后，只说了一句：这个位置一开始都这样。",
+    "desc": "语气不重，但那种见怪不怪的熟练感，让你有点答不上来。",
+    "tags": [
+      "团队",
+      "政治"
+    ],
+    "pack": "暗线",
+    "left": {
+      "label": "先把这轮过掉",
+      "effect": {
+        "trust": 1,
+        "team": -1
+      },
+      "hidden": {
+        "orgFatigue": 2,
+        "bossDependency": 1
+      },
+      "relations": {
+        "sales": 1,
+        "finance": -1
+      },
+      "flags": [
+        "seat_routine"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "追问他意思",
+      "effect": {
+        "trust": -1,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 1,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "sales": -1,
+        "finance": 1
+      },
+      "flags": [
+        "ask_why_me"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "everybody_sends_to_you",
+    "phase": [
+      "mid",
+      "late"
+    ],
+    "weight": 4,
+    "role": "法务经理",
+    "avatar": "📨",
+    "title": "最近什么事都先送你这，不像是巧合。",
+    "desc": "法务经理没说得太满，但你第一次认真想了想，发现他没说错。",
+    "tags": [
+      "政治",
+      "风险",
+      "老板"
+    ],
+    "pack": "暗线",
+    "left": {
+      "label": "先接住再说",
+      "effect": {
+        "trust": 1,
+        "cash": 1
+      },
+      "hidden": {
+        "riskExposure": 2,
+        "bossDependency": 2
+      },
+      "relations": {
+        "boss": 1,
+        "legal": -1
+      },
+      "flags": [
+        "default_receiver"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "把边界写清",
+      "effect": {
+        "trust": -2,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 2,
+        "bossDependency": -2
+      },
+      "relations": {
+        "legal": 2,
+        "boss": -1
+      },
+      "flags": [
+        "write_boundaries"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "predecessor_where",
+    "phase": [
+      "late"
+    ],
+    "weight": 3,
+    "role": "新分析师",
+    "avatar": "❓",
+    "title": "这个位置以前的人，后来都去哪了？",
+    "desc": "他只是随口一问，你却第一次发现，这个问题你居然一直没认真想过。",
+    "tags": [
+      "团队",
+      "政治"
+    ],
+    "pack": "暗线",
+    "left": {
+      "label": "说正常流动",
+      "effect": {
+        "trust": 1,
+        "team": -1
+      },
+      "hidden": {
+        "orgFatigue": 2,
+        "executionDebt": 1
+      },
+      "relations": {
+        "hr": -1,
+        "finance": -1
+      },
+      "flags": [
+        "normal_turnover"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "说这位置耗人",
+      "effect": {
+        "trust": -1,
+        "team": 1
+      },
+      "hidden": {
+        "politicalHeat": 2,
+        "dataMaturity": 1
+      },
+      "relations": {
+        "hr": 1,
+        "finance": 1
+      },
+      "flags": [
+        "seat_cost"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "temporary_patch_person",
+    "phase": [
+      "late"
+    ],
+    "weight": 4,
+    "role": "老板",
+    "avatar": "🩹",
+    "title": "你先把这段顶过去，后面再看要不要换个更适合的人来接。",
+    "desc": "他说得很自然，像是在说组织安排，你却第一次意识到自己也可能只是安排的一部分。",
+    "tags": [
+      "老板",
+      "团队",
+      "政治"
+    ],
+    "pack": "暗线",
+    "left": {
+      "label": "先顶住",
+      "effect": {
+        "trust": 2,
+        "team": -3
+      },
+      "hidden": {
+        "bossDependency": 3,
+        "orgFatigue": 2
+      },
+      "relations": {
+        "boss": 2,
+        "hr": -1
+      },
+      "flags": [
+        "temporary_plug"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "现在讲清",
+      "effect": {
+        "trust": -3,
+        "team": 1
+      },
+      "hidden": {
+        "bossDependency": -2,
+        "dataMaturity": 2
+      },
+      "relations": {
+        "boss": -2,
+        "hr": 1
+      },
+      "flags": [
+        "refuse_patch_person"
+      ],
+      "schedule": []
     }
   }
 ];
