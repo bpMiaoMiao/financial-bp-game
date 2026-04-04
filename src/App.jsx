@@ -1278,7 +1278,7 @@ function SwipeCard({ event, onChoose, onPreviewChange }) {
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.42}
+        dragElastic={0.56}
         dragMomentum={false}
         onDragEnd={handleEnd}
         style={{ x, rotate, zIndex: 2, width: "min(100%, 268px)", minHeight: "clamp(268px, 38vh, 320px)", borderRadius: 32, background: chainTone.background, border: chainTone.border, boxShadow: chainTone.boxShadow, padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", cursor: "grab", touchAction: "pan-y" }}
@@ -1329,10 +1329,11 @@ function BriefingCard({ onStart }) {
   const rotate = useTransform(x, [-160, 0, 160], [-10, 0, 10]);
   const glow = useTransform(x, [-140, 0, 140], ["rgba(15,118,110,0.08)", "rgba(255,255,255,0.72)", "rgba(190,24,93,0.08)"]);
   const startedRef = useRef(false);
+  const startThreshold = 76;
 
   const handleEnd = (_, info) => {
     const distance = info.offset.x;
-    if (Math.abs(distance) > 88) {
+    if (Math.abs(distance) > startThreshold) {
       if (!startedRef.current) {
         startedRef.current = true;
         onStart(distance < 0 ? "left" : "right");
@@ -1347,7 +1348,8 @@ function BriefingCard({ onStart }) {
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.14}
+        dragElastic={0.56}
+        dragMomentum={false}
         onDragEnd={handleEnd}
         style={{ x, rotate, width: "min(100%, 360px)", display: "grid", gap: 18, padding: "28px 26px", borderRadius: 32, background: glow, border: "1px solid rgba(159,107,79,0.12)", boxShadow: "0 24px 70px rgba(61,41,26,0.08)", backdropFilter: "blur(10px)", cursor: "grab", touchAction: "pan-y" }}
       >
@@ -1574,8 +1576,24 @@ function App() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div />
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setSoundOn((value) => !value)} style={iconBtnStyle} title={soundOn ? "关闭音效" : "开启音效"}>{soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}</button>
-              <button onClick={restart} style={iconBtnStyle} title="随机重开"><RotateCcw size={16} /></button>
+              <motion.button
+                whileTap={{ scale: 0.92, y: 1 }}
+                transition={{ duration: 0.08 }}
+                onClick={() => setSoundOn((value) => !value)}
+                style={iconBtnStyle}
+                title={soundOn ? "关闭音效" : "开启音效"}
+              >
+                {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.92, y: 1 }}
+                transition={{ duration: 0.08 }}
+                onClick={restart}
+                style={iconBtnStyle}
+                title="随机重开"
+              >
+                <RotateCcw size={16} />
+              </motion.button>
             </div>
           </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -1620,7 +1638,15 @@ function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   onClick={continueFromResult}
-                  style={{ width: "100%", display: "grid", justifyItems: "center", gap: 14, cursor: "pointer" }}
+                  style={{
+                    width: "100%",
+                    display: "grid",
+                    justifyItems: "center",
+                    gap: 14,
+                    cursor: "pointer",
+                    WebkitTapHighlightColor: "transparent",
+                    userSelect: "none",
+                  }}
                 >
                   <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10 }}>
                     <div style={speechRoleStyle}>{latestOutcome.speaker}</div>
@@ -1721,7 +1747,19 @@ const speechQuoteStyle = { fontSize: "clamp(24px, 6vw, 30px)", lineHeight: 1.24,
 const speechDescStyle = { margin: 0, fontSize: "clamp(14px, 4vw, 16px)", lineHeight: 1.75, color: "#4b5563", maxWidth: 330, fontFamily: '"Iowan Old Style", "Georgia", serif' };
 const primaryBtnStyle = { marginTop: 16, height: 52, border: 0, borderRadius: 22, background: "#111827", color: "white", fontWeight: 800, cursor: "pointer" };
 const secondaryBtnStyle = { height: 46, border: "1px solid rgba(0,0,0,0.08)", borderRadius: 18, background: "white", color: "#111827", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
-const iconBtnStyle = { width: 36, height: 36, borderRadius: 999, border: "1px solid rgba(0,0,0,0.06)", background: "white", display: "grid", placeItems: "center", cursor: "pointer" };
+const iconBtnStyle = {
+  width: 36,
+  height: 36,
+  borderRadius: 999,
+  border: "1px solid rgba(0,0,0,0.06)",
+  background: "white",
+  display: "grid",
+  placeItems: "center",
+  cursor: "pointer",
+  boxShadow: "0 4px 10px rgba(17,24,39,0.06)",
+  WebkitTapHighlightColor: "transparent",
+  userSelect: "none",
+};
 const producerSplashStyle = { position: "relative", flex: 1, display: "grid", placeItems: "center", overflow: "hidden", background: "linear-gradient(180deg, #f7efe2 0%, #ecdcc8 54%, #e4d6cb 100%)" };
 const producerBackdropStyle = { position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 28%, rgba(255,255,255,0.9), transparent 30%), radial-gradient(circle at 50% 78%, rgba(170,122,84,0.16), transparent 38%)" };
 const producerLockupStyle = { position: "relative", display: "grid", justifyItems: "center", gap: 14, padding: "24px 20px", textAlign: "center" };
