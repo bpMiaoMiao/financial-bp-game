@@ -1245,11 +1245,11 @@ function SwipeCard({ event, onChoose, onPreviewChange }) {
   }, [x, onPreviewChange]);
 
   const handleEnd = async (_, info) => {
-    if (info.offset.x < -110) {
+    if (info.offset.x < -92) {
       await animate(x, -420, { duration: 0.18 });
       onPreviewChange?.(null);
       onChoose("left");
-    } else if (info.offset.x > 110) {
+    } else if (info.offset.x > 92) {
       await animate(x, 420, { duration: 0.18 });
       onPreviewChange?.(null);
       onChoose("right");
@@ -1278,9 +1278,10 @@ function SwipeCard({ event, onChoose, onPreviewChange }) {
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.12}
+        dragElastic={0.42}
+        dragMomentum={false}
         onDragEnd={handleEnd}
-        style={{ x, rotate, zIndex: 2, width: "min(100%, 268px)", minHeight: "clamp(268px, 38vh, 320px)", borderRadius: 32, background: chainTone.background, border: chainTone.border, boxShadow: chainTone.boxShadow, padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", cursor: "grab" }}
+        style={{ x, rotate, zIndex: 2, width: "min(100%, 268px)", minHeight: "clamp(268px, 38vh, 320px)", borderRadius: 32, background: chainTone.background, border: chainTone.border, boxShadow: chainTone.boxShadow, padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", cursor: "grab", touchAction: "pan-y" }}
       >
         <div style={{ position: "absolute", inset: 0, background: chainTone.halo }} />
         <div style={{ position: "relative", width: "100%", display: "grid", gap: 16, justifyItems: "center", flex: 1 }}>
