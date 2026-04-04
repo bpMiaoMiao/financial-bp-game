@@ -192,6 +192,94 @@ function scaleHiddenDelta(delta = {}, round) {
   );
 }
 
+function rescaleSigned(value, factor) {
+  if (!value || factor === 1) return value;
+  return Math.sign(value) * Math.max(1, Math.round(Math.abs(value) * factor));
+}
+
+function amplifyNegative(delta, key, factor) {
+  if ((delta[key] ?? 0) < 0) delta[key] = rescaleSigned(delta[key], factor);
+}
+
+function dampenPositive(delta, key, factor) {
+  if ((delta[key] ?? 0) > 0) delta[key] = rescaleSigned(delta[key], factor);
+}
+
+function amplifyAny(delta, key, factor) {
+  if (delta[key]) delta[key] = rescaleSigned(delta[key], factor);
+}
+
+function projectChoiceDeltas(event, choice, state) {
+  const scaledEffect = scaleStatDelta(choice.effect, state.round);
+  const scaledHidden = scaleHiddenDelta(choice.hidden, state.round);
+  const scaledRelations = scaleRelationDelta(choice.relations, state.round);
+  const tags = new Set(event.tags || []);
+  const levels = hiddenRouteLevels(state);
+
+  if (levels.orgFatigue >= 3 && (tags.has("团队") || tags.has("执行") || tags.has("老板"))) {
+    amplifyNegative(scaledEffect, "team", 1.6);
+    amplifyNegative(scaledEffect, "trust", 1.25);
+    dampenPositive(scaledEffect, "team", 0.6);
+    amplifyAny(scaledHidden, "orgFatigue", 1.35);
+  }
+
+  if (levels.riskExposure >= 3 && (tags.has("风险") || tags.has("合规") || tags.has("政治") || tags.has("老板"))) {
+    amplifyNegative(scaledEffect, "trust", 1.55);
+    amplifyNegative(scaledEffect, "cash", 1.3);
+    dampenPositive(scaledEffect, "trust", 0.65);
+    amplifyAny(scaledHidden, "riskExposure", 1.35);
+  }
+
+  if (levels.bossDependency >= 3 && (tags.has("老板") || tags.has("政治"))) {
+    amplifyAny(scaledEffect, "trust", 1.35);
+    amplifyNegative(scaledEffect, "team", 1.2);
+    amplifyNegative(scaledEffect, "cash", 1.15);
+    amplifyAny(scaledHidden, "bossDependency", 1.3);
+  }
+
+  if (levels.politicalHeat >= 3 && (tags.has("政治") || tags.has("团队") || tags.has("老板"))) {
+    amplifyNegative(scaledEffect, "trust", 1.35);
+    amplifyNegative(scaledEffect, "team", 1.35);
+    dampenPositive(scaledEffect, "trust", 0.75);
+    dampenPositive(scaledEffect, "team", 0.75);
+    amplifyAny(scaledHidden, "politicalHeat", 1.3);
+  }
+
+  if (levels.executionDebt >= 3 && (tags.has("执行") || tags.has("数据") || tags.has("系统"))) {
+    amplifyNegative(scaledEffect, "trust", 1.3);
+    amplifyNegative(scaledEffect, "cash", 1.2);
+    dampenPositive(scaledEffect, "cash", 0.7);
+    dampenPositive(scaledEffect, "trust", 0.7);
+    amplifyAny(scaledHidden, "executionDebt", 1.35);
+  }
+
+  if (levels.dataMaturity >= 3 && (tags.has("数据") || tags.has("系统") || tags.has("执行"))) {
+    amplifyNegative(scaledEffect, "trust", 1.3);
+    amplifyNegative(scaledEffect, "cash", 1.15);
+    dampenPositive(scaledEffect, "trust", 0.75);
+    dampenPositive(scaledEffect, "cash", 0.75);
+    amplifyNegative(scaledHidden, "dataMaturity", 1.35);
+    dampenPositive(scaledHidden, "dataMaturity", 0.75);
+  }
+
+  if (levels.customerTrust >= 3 && (tags.has("客户") || tags.has("增长") || tags.has("利润质量"))) {
+    dampenPositive(scaledEffect, "growth", 0.75);
+    amplifyNegative(scaledEffect, "trust", 1.3);
+    amplifyNegative(scaledEffect, "cash", 1.15);
+    amplifyNegative(scaledHidden, "customerTrust", 1.35);
+    dampenPositive(scaledHidden, "customerTrust", 0.75);
+  }
+
+  if (levels.marginHealth >= 3 && (tags.has("增长") || tags.has("利润质量") || tags.has("客户"))) {
+    dampenPositive(scaledEffect, "growth", 0.75);
+    amplifyNegative(scaledEffect, "cash", 1.15);
+    amplifyNegative(scaledHidden, "marginHealth", 1.35);
+    dampenPositive(scaledHidden, "marginHealth", 0.75);
+  }
+
+  return { effect: scaledEffect, hidden: scaledHidden, relations: scaledRelations };
+}
+
 function recentRepeats(list = [], value) {
   return list.filter((item) => item === value).length;
 }
@@ -722,17 +810,149 @@ function choosePersona(state) {
   return personaDefs.find((p) => p.key === top) ?? personaDefs[0];
 }
 
-function pickEnding(state) {
-  if (state.cash <= 12) return { title: "死于：现金流断裂", text: "最后不是市场把你打死的，而是你替增长、关系和场面争来的每一口时间，最后都从现金里先垫了出去。", memo: "这个岗位常常先替别人把代价垫成一个还能继续开的会，直到连账上的最后一口气也垫没。", handoff: "几天后，新一任财务BP到岗了。第一场会里，还是有人说：先把这轮顶过去。" };
-  if (state.team <= 12 || state.hidden.orgFatigue >= 82) return { title: "死于：组织崩盘", text: "报表还在出，流程还在转，但那些本该被正面解决的拉扯，最后先压垮的是你和还在硬撑的人。", memo: "你一直在把冲突翻译成还能合作的样子，直到再也没有人愿意替这套样子继续买单。", handoff: "新一任财务BP到岗时，团队已经学会先看他的表情，再决定这次该把哪口气压住。" };
-  if (state.trust <= 12) return { title: "死于：老板不再信你", text: "你不一定每次都错，只是慢慢失去了那个还能把真话送上桌、再把场面接回来的位置。", memo: "这个岗位被需要时像心腹，不被需要时也最容易先失去说真话的资格。", handoff: "下一任很快到了。大家照旧说这个位置很重要，只是没人再提上一任是怎么离开的。" };
-  if (state.growth <= 12) return { title: "死于：增长停摆", text: "你把每一次会失控的风险都先接住了，也把整个盘子继续往前冲的劲一并接没了。", memo: "当一个岗位被长期用来缓冲矛盾，它迟早会把向前的速度也一起缓冲掉。", handoff: "几周后，新人入座。桌上摆着新的目标拆解，话还是那句：先别让场面掉下来。" };
-  if (state.hidden.customerTrust <= 12) return { title: "死于：客户反噬", text: "内部每一页表都还能讲，外部却已经开始用退款、流失和沉默提醒你，真相不会一直被版本挡在门外。", memo: "你能替很多人把冲突往后翻译，却翻译不了客户最后那句不再回来的拒绝。", handoff: "新一任到岗那天，客服还在汇总新的投诉。公司照常推进，只是客户早就开始用别的方式投票了。" };
-  if (state.hidden.riskExposure >= 88) return { title: "死于：风险集中爆雷", text: "你把太多灰区先接进流程、版本和解释里，最后它们挑了同一天，把原本该分散爆开的东西一起还给了你。", memo: "很多雷不是没人看见，而是总要先有人把它们接成一个还能继续往下走的样子。", handoff: "不久之后，新一任财务BP到岗。交接表很短，真正难写进表里的那部分，还在等下一个人继续接。" };
-  if (state.hidden.bossDependency >= 88 || state.trust >= 88) return { title: "死于：过度靠近权力", text: "你成了最被需要的那个人，也一步步把不该你背的判断、不该你兜的后果，都背到了自己身上。", memo: "离权力太远会失去位置，离得太近，这个位置就会慢慢从判断者变成默认的承接者。", handoff: "下一任来时，老板还是照样说：这事你先帮我接一下。语气很熟，像这个位置从来就该这么用。" };
-  if (state.cash >= 88 && state.growth < 44) return { title: "死于：过度保守", text: "钱是留下来了，但你也把太多本该正面回答的问题，一起留成了不再有人想碰的沉默。", memo: "安全从来不是终点。这个岗位一旦只剩下替所有人把风险往后拖，最后连想赢的资格也会一起拖没。", handoff: "新一任到岗后，第一份简报还是很稳。只是大家心里都知道，稳本身解决不了为什么一直没人敢真正往前走。" };
-  if (state.growth >= 88 && state.hidden.marginHealth < 42) return { title: "死于：虚假繁荣", text: "数字一度很热闹，可真正留下来的只有被掏空的利润、现金和团队，而你只是那个负责把热闹翻译成版本的人。", memo: "热闹会让人短暂忘记真相，也会让这个岗位看起来像还在掌控局面，直到代价一起回到桌上。", handoff: "新人很快到岗。新一轮周报还是漂亮，只是版本里照旧没有写上上一任是替谁把代价先接走的。" };
-  return null;
+function hasAnyFlag(state, flags = []) {
+  const set = new Set(state.flags || []);
+  return flags.some((flag) => set.has(flag));
+}
+
+const ENDING_RULES = [
+  {
+    id: "numbers_discredited",
+    isFatal: (state) =>
+      state.trust <= 0 &&
+      state.hidden.dataMaturity <= 26 &&
+      state.hidden.executionDebt >= 42 &&
+      hasAnyFlag(state, ["manual_forecast", "data_patch", "close_cram", "skip_system", "misaligned_kpi"]),
+    crossed: (prev, next) =>
+      !(prev.trust <= 0 && prev.hidden.dataMaturity <= 26 && prev.hidden.executionDebt >= 42) &&
+      next.trust <= 0 &&
+      next.hidden.dataMaturity <= 26 &&
+      next.hidden.executionDebt >= 42,
+    severity: (state) => 100 + Math.abs(state.trust) + (42 - state.hidden.dataMaturity) + (state.hidden.executionDebt - 42),
+    ending: {
+      special: true,
+      title: "特殊死亡：数字失去公信力",
+      text: "到了最后，已经不是哪一版更好看的问题了，而是没人再相信你拿出来的数字还能代表真实情况。",
+      memo: "你一次次把问题补成了还能往下开的版本，也把这个岗位最后一点解释权一起补没了。",
+      handoff: "新人到岗那天，第一句交代不是目标，而是：这次先把数对齐，别再让人觉得版本比真相更完整。",
+    },
+  },
+  {
+    id: "silent_walkout",
+    isFatal: (state) =>
+      state.team <= 0 &&
+      state.hidden.orgFatigue >= 48 &&
+      hasAnyFlag(state, ["freeze_hiring", "burn_team", "keep_freeze", "weekend_overtime", "performance_push"]),
+    crossed: (prev, next) =>
+      !(prev.team <= 0 && prev.hidden.orgFatigue >= 48) &&
+      next.team <= 0 &&
+      next.hidden.orgFatigue >= 48,
+    severity: (state) => 100 + Math.abs(state.team) + (state.hidden.orgFatigue - 48),
+    ending: {
+      special: true,
+      title: "特殊死亡：组织静默离场",
+      text: "没有哪一场会真的吵翻，大家只是一个个不再解释、不再提问，也不再相信这套日子还能被继续扛下去。",
+      memo: "你一直在替组织把冲突压成还能合作的样子，直到合作这件事本身先从桌上消失了。",
+      handoff: "下一任入座时，团队还在。只是很多人已经学会少说一句、少接一口气，把真正的离开留到会后再做。",
+    },
+  },
+  {
+    id: "public_meltdown",
+    isFatal: (state) =>
+      state.trust <= 0 &&
+      state.hidden.bossDependency >= 44 &&
+      state.hidden.politicalHeat >= 44 &&
+      hasAnyFlag(state, ["public_promise", "boss_confidant", "stand_side", "meeting_rewrite", "speak_for_boss", "owner_override"]),
+    crossed: (prev, next) =>
+      !(prev.trust <= 0 && prev.hidden.bossDependency >= 44 && prev.hidden.politicalHeat >= 44) &&
+      next.trust <= 0 &&
+      next.hidden.bossDependency >= 44 &&
+      next.hidden.politicalHeat >= 44,
+    severity: (state) => 100 + Math.abs(state.trust) + (state.hidden.bossDependency - 44) + (state.hidden.politicalHeat - 44),
+    ending: {
+      special: true,
+      title: "特殊死亡：公开失守",
+      text: "你替太多人把判断、场面和版本接成了一句能说的话，直到终于有一次，所有人都在等你把那句话说圆，而你已经圆不回来了。",
+      memo: "这个岗位最危险的时候，不是没人找你，而是所有人都默认该由你站出来，把他们不想亲口承担的东西讲完。",
+      handoff: "新一任到岗时，会议室还是满的。大家照旧把目光留给坐在中间的那个人，像这位置本来就该先把场面接住。",
+    },
+  },
+  {
+    id: "cash_crash",
+    isFatal: (state) => state.cash <= 0,
+    crossed: (prev, next) => prev.cash > 0 && next.cash <= 0,
+    severity: (state) => Math.abs(state.cash),
+    ending: {
+      special: false,
+      title: "死于：现金流断裂",
+      text: "最后不是市场把你打死的，而是你替增长、关系和场面争来的每一口时间，最后都从现金里先垫了出去。",
+      memo: "这个岗位常常先替别人把代价垫成一个还能继续开的会，直到连账上的最后一口气也垫没。",
+      handoff: "几天后，新一任财务BP到岗了。第一场会里，还是有人说：先把这轮顶过去。",
+    },
+  },
+  {
+    id: "org_collapse",
+    isFatal: (state) => state.team <= 0,
+    crossed: (prev, next) => prev.team > 0 && next.team <= 0,
+    severity: (state) => Math.abs(state.team),
+    ending: {
+      special: false,
+      title: "死于：组织崩盘",
+      text: "报表还在出，流程还在转，但那些本该被正面解决的拉扯，最后先压垮的是你和还在硬撑的人。",
+      memo: "你一直在把冲突翻译成还能合作的样子，直到再也没有人愿意替这套样子继续买单。",
+      handoff: "新一任财务BP到岗时，团队已经学会先看他的表情，再决定这次该把哪口气压住。",
+    },
+  },
+  {
+    id: "trust_break",
+    isFatal: (state) => state.trust <= 0,
+    crossed: (prev, next) => prev.trust > 0 && next.trust <= 0,
+    severity: (state) => Math.abs(state.trust),
+    ending: {
+      special: false,
+      title: "死于：老板不再信你",
+      text: "你不一定每次都错，只是慢慢失去了那个还能把真话送上桌、再把场面接回来的位置。",
+      memo: "这个岗位被需要时像心腹，不被需要时也最容易先失去说真话的资格。",
+      handoff: "下一任很快到了。大家照旧说这个位置很重要，只是没人再提上一任是怎么离开的。",
+    },
+  },
+  {
+    id: "growth_stall",
+    isFatal: (state) => state.growth <= 0,
+    crossed: (prev, next) => prev.growth > 0 && next.growth <= 0,
+    severity: (state) => Math.abs(state.growth),
+    ending: {
+      special: false,
+      title: "死于：增长停摆",
+      text: "你把每一次会失控的风险都先接住了，也把整个盘子继续往前冲的劲一并接没了。",
+      memo: "当一个岗位被长期用来缓冲矛盾，它迟早会把向前的速度也一起缓冲掉。",
+      handoff: "几周后，新人入座。桌上摆着新的目标拆解，话还是那句：先别让场面掉下来。",
+    },
+  },
+  {
+    id: "too_close_to_power",
+    isFatal: () => false,
+    crossed: () => false,
+    severity: () => 0,
+    ending: null,
+  },
+  {
+    id: "too_safe",
+    isFatal: () => false,
+    crossed: () => false,
+    severity: () => 0,
+    ending: null,
+  },
+];
+
+function pickEnding(prevState, nextState) {
+  const active = ENDING_RULES.filter((rule) => rule.ending && rule.isFatal(nextState));
+  if (!active.length) return null;
+
+  const newlyCrossed = active.filter((rule) => rule.crossed(prevState, nextState));
+  const pool = newlyCrossed.length ? newlyCrossed : active;
+  const chosen = [...pool].sort((a, b) => b.severity(nextState) - a.severity(nextState))[0];
+  return chosen.ending;
 }
 
 function buildQuarterSummary(state) {
@@ -1022,18 +1242,21 @@ function conciseOutcomeFollowup({ override, highlights, dueNote, routeId }) {
   return "";
 }
 
-function buildChoiceOutcome(event, choice, side, notes = []) {
+function buildChoiceOutcome(event, choice, side, notes = [], projected = null) {
   const override = outcomeOverrides[event.id]?.[side];
-  const statHighlights = topDeltaEntries(choice.effect, 2).map(([key, value]) => outcomeFragment("stat", key, value));
-  const hiddenHighlights = topDeltaEntries(choice.hidden, 1).map(([key, value]) => outcomeFragment("hidden", key, value));
-  const relationHighlights = topDeltaEntries(choice.relations, 1).map(([key, value]) => outcomeFragment("relation", key, value));
+  const effect = projected?.effect || choice.effect || {};
+  const hidden = projected?.hidden || choice.hidden || {};
+  const relations = projected?.relations || choice.relations || {};
+  const statHighlights = topDeltaEntries(effect, 2).map(([key, value]) => outcomeFragment("stat", key, value));
+  const hiddenHighlights = topDeltaEntries(hidden, 1).map(([key, value]) => outcomeFragment("hidden", key, value));
+  const relationHighlights = topDeltaEntries(relations, 1).map(([key, value]) => outcomeFragment("relation", key, value));
   const highlights = [...statHighlights, ...hiddenHighlights, ...relationHighlights].slice(0, 2);
 
   const directScore = [
-    ...Object.values(choice.effect || {}),
-    ...Object.values(choice.relations || {}),
+    ...Object.values(effect),
+    ...Object.values(relations),
   ].reduce((sum, value) => sum + Math.sign(value), 0);
-  const hiddenRiskScore = Object.entries(choice.hidden || {}).reduce((sum, [key, value]) => {
+  const hiddenRiskScore = Object.entries(hidden).reduce((sum, [key, value]) => {
     const riskyUp = ["executionDebt", "orgFatigue", "riskExposure", "bossDependency", "politicalHeat"];
     const riskyDown = ["marginHealth", "dataMaturity", "customerTrust"];
     if (riskyUp.includes(key)) return sum - Math.sign(value);
@@ -1079,8 +1302,23 @@ function buildChoiceOutcome(event, choice, side, notes = []) {
   };
 }
 
-function sceneTheme(screen, event) {
+function sceneTheme(screen, event, ending) {
   if (screen === "ending") {
+    if (ending?.special) {
+      return {
+        appBg: "linear-gradient(180deg, #34242a 0%, #725149 48%, #dcc9b7 100%)",
+        frameBg: "linear-gradient(180deg, #f9ede2 0%, #ead8c8 100%)",
+        frameBorder: "1px solid rgba(91,45,51,0.10)",
+        frameShadow: "0 24px 80px rgba(47,22,28,0.30)",
+        overlay: "radial-gradient(circle at top, rgba(255,243,236,0.56), transparent 35%), radial-gradient(circle at bottom, rgba(122,54,62,0.14), transparent 45%)",
+        panelBg: "#fff8f2",
+        panelBorder: "1px solid rgba(128,67,67,0.10)",
+        panelShadow: "0 20px 58px rgba(70,31,34,0.15)",
+        boxBg: "#f6e8dd",
+        miniBg: "#fcf4eb",
+        headerGlow: "linear-gradient(180deg, rgba(145,74,74,0.08), transparent)",
+      };
+    }
     return {
       appBg: "linear-gradient(180deg, #2f1f24 0%, #6a4a42 48%, #d9c5b5 100%)",
       frameBg: "linear-gradient(180deg, #f8ecde 0%, #ead8c8 100%)",
@@ -1379,7 +1617,7 @@ function App() {
   const persona = useMemo(() => choosePersona(state), [state]);
   const currentSpeech = useMemo(() => currentEvent.priority ? chainSpeech(currentEvent, state) : eventSpeech(currentEvent), [currentEvent, state]);
   const latestOutcome = state.memory.latestOutcome;
-  const theme = useMemo(() => sceneTheme(state.screen, currentEvent), [state.screen, currentEvent]);
+  const theme = useMemo(() => sceneTheme(state.screen, currentEvent, state.ending), [state.screen, currentEvent, state.ending]);
   const surfacePanelStyle = useMemo(() => ({ ...panelStyle, background: theme.panelBg, border: theme.panelBorder, boxShadow: theme.panelShadow }), [theme]);
   const surfaceBoxStyle = useMemo(() => ({ ...boxedStyle, background: theme.boxBg }), [theme]);
   const surfaceMiniCardStyle = useMemo(() => ({ ...miniCardStyle, background: theme.miniBg }), [theme]);
@@ -1392,10 +1630,10 @@ function App() {
     if (!choice) {
       return Object.fromEntries(STAT_KEYS.map((key) => [key, { value: state[key], previewValue: state[key], direction: 0, active: false }]));
     }
-    const scaled = scaleStatDelta(choice.effect, state.round);
+    const projected = projectChoiceDeltas(currentEvent, choice, state);
     return Object.fromEntries(
       STAT_KEYS.map((key) => {
-        const delta = scaled[key] || 0;
+        const delta = projected.effect[key] || 0;
         const previewValue = clamp(state[key] + delta);
         return [key, { value: state[key], previewValue, direction: Math.sign(delta), active: delta !== 0 }];
       }),
@@ -1432,7 +1670,7 @@ function App() {
   };
 
   const advance = (nextState) => {
-    const ending = pickEnding(nextState);
+    const ending = pickEnding(state, nextState);
     if (ending) {
       setState({
         ...nextState,
@@ -1489,9 +1727,10 @@ function App() {
     const choice = currentEvent[side];
     playUiSound(audioRef, side === "left" ? "swipeLeft" : "swipeRight", soundOn);
     const routeId = findRouteId({ eventId: currentEvent.id, flags: choice.flags || [] });
-    const scaledEffect = scaleStatDelta(choice.effect, state.round);
-    const scaledHidden = scaleHiddenDelta(choice.hidden, state.round);
-    const scaledRelations = scaleRelationDelta(choice.relations, state.round);
+    const projected = projectChoiceDeltas(currentEvent, choice, state);
+    const scaledEffect = projected.effect;
+    const scaledHidden = projected.hidden;
+    const scaledRelations = projected.relations;
     let next = {
       ...state,
       ...applyDeltaBlock(state, scaledEffect, STAT_KEYS),
@@ -1536,7 +1775,7 @@ function App() {
       memory: {
         ...afterDelayed.memory,
         delayedNotes: notes.slice(-3),
-        latestOutcome: buildChoiceOutcome(currentEvent, choice, side, notes),
+        latestOutcome: buildChoiceOutcome(currentEvent, choice, side, notes, projected),
       },
     };
     advance(next);
@@ -1679,13 +1918,17 @@ function App() {
 
               {state.screen === "ending" && (
                 <motion.div key={`ending_${state.round}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ ...surfacePanelStyle, maxWidth: 352, paddingTop: 22, paddingBottom: 18 }}>
-                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Skull size={52} /></div>
-                  <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9f6b4f" }}>结局</div>
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                    <Skull size={52} color={state.ending.special ? "#8e4b4a" : undefined} />
+                  </div>
+                  <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: state.ending.special ? "#8e4b4a" : "#9f6b4f" }}>
+                    结局
+                  </div>
                   <h2 style={titleStyle}>{state.ending.title}</h2>
                   <p style={descStyle}>{state.ending.text}</p>
-                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: "#6b7280", textAlign: "center" }}>{state.ending.memo}</div>
+                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: state.ending.special ? "#75514c" : "#6b7280", textAlign: "center" }}>{state.ending.memo}</div>
                   <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8, textAlign: "center" }}>你活到了第 {state.round} 轮</div>
-                  <div style={{ ...surfaceBoxStyle, marginTop: 12, textAlign: "center", padding: "14px 16px" }}>
+                  <div style={{ ...surfaceBoxStyle, marginTop: 12, textAlign: "center", padding: "14px 16px", background: state.ending.special ? "linear-gradient(180deg, #f6e8dd 0%, #f1dfd3 100%)" : surfaceBoxStyle.background, border: state.ending.special ? "1px solid rgba(128,67,67,0.10)" : surfaceBoxStyle.border }}>
                     <div style={{ fontSize: 14, lineHeight: 1.8, color: "#4b5563" }}>{state.ending.handoff}</div>
                   </div>
                   <button onClick={restart} style={{ ...primaryBtnStyle, marginTop: 12 }}>工作交接</button>
