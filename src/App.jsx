@@ -4,6 +4,7 @@ import { RotateCcw, Skull, Volume2, VolumeX } from "lucide-react";
 import { scenarios, initialRelations } from "./data/scenarios";
 import { baseEvents } from "./data/baseEvents";
 import { chainEvents } from "./data/chainEvents";
+import { storyChains } from "./data/storyChains";
 import { delayedEffects } from "./data/delayedEffects";
 import { chainCauseHints, chainRouteConfigs, chainRoutePressure } from "./data/chainMeta";
 import { outcomeOverrides } from "./data/outcomeOverrides";
@@ -122,6 +123,21 @@ function matchesConditions(state, conditions) {
   if (checks.some((ok) => !ok)) return false;
   if (!conditions.alternatives?.length) return true;
   return conditions.alternatives.some((alternative) => matchesConditions(state, alternative));
+}
+
+function alternativeFulfillmentScore(state, alternative = {}) {
+  let score = 0;
+  const allFlags = alternative.allFlags || [];
+  score += allFlags.filter((flag) => state.flags.includes(flag)).length * 0.75;
+  if ((alternative.anyFlags || []).some((flag) => state.flags.includes(flag))) score += 0.45;
+  score += thresholdMomentum(state, alternative.statMin, "min", 24);
+  score += thresholdMomentum(state, alternative.statMax, "max", 24);
+  score += thresholdMomentum(state.hidden, alternative.hiddenMin, "min", 20);
+  score += thresholdMomentum(state.hidden, alternative.hiddenMax, "max", 20);
+  score += thresholdMomentum(state.relations, alternative.relationMin, "min", 24);
+  score += thresholdMomentum(state.relations, alternative.relationMax, "max", 24);
+  if (alternative.roundMin && state.round >= alternative.roundMin) score += 0.35;
+  return score;
 }
 
 function applyDeltaBlock(base, delta, keys) {
@@ -446,6 +462,195 @@ function bpBufferProfile(state) {
   };
 }
 
+function choiceSchedulesCount(event) {
+  const left = event.left?.schedule?.length || 0;
+  const right = event.right?.schedule?.length || 0;
+  return left + right;
+}
+
+const MANUAL_BASE_DEBT = new Set([
+  "marketing_budget",
+  "flagship_launch",
+  "live_stream_push",
+  "festival_promo",
+  "affiliate_bounty",
+  "marketplace_coupon",
+  "gmv_target",
+  "bundle_offer",
+  "long_terms",
+  "advance_payment",
+  "supplier_pressure",
+  "collection_team",
+  "deposit_negotiation",
+  "prepay_inventory",
+  "capex_installment",
+  "discount",
+  "inventory_push",
+  "build_system",
+  "manual_reconcile",
+  "freeze_hiring",
+  "headcount_fight",
+  "salary_adjustment",
+  "shared_service_request",
+  "meeting_rewrite",
+  "boss_temp_number",
+]);
+
+const MANUAL_BASE_RECKONING = new Set([
+  "payroll_warning",
+  "bad_debt_signal",
+  "bridge_loan",
+  "tax_payment",
+  "fund_pool_shift",
+  "settlement_delay",
+  "bonus_payout",
+  "overnight_forecast",
+  "boss_station",
+  "owner_friend_project",
+  "board_deck_polish",
+  "investor_story",
+  "data_fight",
+  "close_rush",
+  "report_error",
+  "hot_sku_stockout",
+  "emergency_restock",
+  "slow_moving_overhang",
+  "low_margin_big_order",
+  "platform_fee_up",
+  "predecessor_where",
+  "temporary_patch_person",
+]);
+
+const COMBO_CHAIN_IDS = new Set([
+  "office_romance_flashpoint",
+  "promotion_revolt",
+  "nepotism_probe",
+  "clique_split",
+  "paper_runway",
+  "numbers_hostage",
+  "hallway_silence",
+  "trained_to_wait",
+  "proxy_signature",
+  "quality_claim_room",
+  "inventory_mirage",
+  "middle_seat_protocol",
+]);
+
+const STORY_ARC_FLAG_PREFIXES = {
+  predecessor_trace: "predecessor_trace_",
+  friend_project: "friend_project_",
+  showcase_narrative: "showcase_",
+  hr_watchlist: "hr_watchlist_",
+  vendor_shadow: "vendor_shadow_",
+  bi_anomaly: "bi_anomaly_",
+  warehouse_backdoor: "warehouse_backdoor_",
+};
+
+const STORY_ARC_IDS = storyChains.reduce((acc, event) => {
+  if (!acc[event.storyArc]) acc[event.storyArc] = [];
+  acc[event.storyArc].push(event.id);
+  return acc;
+}, {});
+
+function conditionComplexity(conditions = {}) {
+  let score = 0;
+  score += (conditions.allFlags?.length || 0) * 1.15;
+  score += (conditions.anyFlags?.length || 0) * 0.85;
+  score += (conditions.alternatives?.length || 0) * 2.2;
+  score += Object.keys(conditions.statMin || {}).length * 1.1;
+  score += Object.keys(conditions.statMax || {}).length * 1.1;
+  score += Object.keys(conditions.hiddenMin || {}).length * 1.25;
+  score += Object.keys(conditions.hiddenMax || {}).length * 1.25;
+  score += Object.keys(conditions.relationMin || {}).length * 0.9;
+  score += Object.keys(conditions.relationMax || {}).length * 0.9;
+  score += conditions.roundMin ? 0.9 : 0;
+  return score;
+}
+
+function progressionClass(event) {
+  if (event.priority) {
+    const complexity = conditionComplexity(event.conditions || {});
+    if (
+      event.priority >= 10 ||
+      complexity >= 5.2 ||
+      (event.conditions?.alternatives?.length || 0) >= 1 ||
+      (event.conditions?.allFlags?.length || 0) >= 2
+    ) {
+      return "reckoning";
+    }
+    return "debt";
+  }
+
+  if (MANUAL_BASE_RECKONING.has(event.id)) return "reckoning";
+  if (MANUAL_BASE_DEBT.has(event.id)) return "debt";
+
+  if (event.pack === "暗线") {
+    if (["predecessor_where", "temporary_patch_person"].includes(event.id)) return "reckoning";
+    if (["you_explain_again", "old_hand_reaction", "everybody_sends_to_you"].includes(event.id)) return "debt";
+    return "normal";
+  }
+
+  const scheduleCount = choiceSchedulesCount(event);
+  const complexity = conditionComplexity(event.conditions || {});
+  const phases = event.phase || [];
+  const lateOnly = phases.includes("late") && !phases.includes("early");
+  const touchesLate = phases.includes("late");
+  const debtPacks = new Set(["现金", "库存", "系统", "数据", "组织", "老板", "政治", "利润质量"]);
+  const reckoningPacks = new Set(["老板", "政治", "系统", "数据"]);
+
+  if (
+    scheduleCount >= 2 ||
+    complexity >= 5.2 ||
+    (lateOnly && reckoningPacks.has(event.pack) && complexity >= 1.6) ||
+    (touchesLate && reckoningPacks.has(event.pack) && complexity >= 2.2) ||
+    ((event.tags || []).some((tag) => ["风险", "合规", "政治", "老板"].includes(tag)) && complexity >= 3.2)
+  ) {
+    return "reckoning";
+  }
+  if (
+    touchesLate ||
+    (debtPacks.has(event.pack) && (touchesLate || complexity >= 0.8 || scheduleCount >= 1)) ||
+    scheduleCount >= 1 ||
+    complexity >= 1.2 ||
+    ((event.tags || []).some((tag) => ["数据", "系统", "执行", "客户", "利润质量"].includes(tag)) && complexity >= 0.8)
+  ) {
+    return "debt";
+  }
+  return "normal";
+}
+
+function progressionPhaseWeight(event, state) {
+  const phase = phaseOfRound(state.round);
+  const kind = progressionClass(event);
+
+  if (event.priority) {
+    if (phase === "early") {
+      if (kind === "reckoning") return -2.8;
+      return -0.8;
+    }
+    if (phase === "mid") {
+      if (kind === "reckoning") return 0.6;
+      return 1.2;
+    }
+    if (kind === "reckoning") return 2.1;
+    return 0.4;
+  }
+
+  if (phase === "early") {
+    if (kind === "normal") return 1.35;
+    if (kind === "debt") return -0.55;
+    return -2.1;
+  }
+  if (phase === "mid") {
+    if (kind === "normal") return -0.2;
+    if (kind === "debt") return 1.05;
+    return 0.5;
+  }
+  if (kind === "normal") return -0.95;
+  if (kind === "debt") return 0.35;
+  return 1.8;
+}
+
 function hiddenRouteLevels(state) {
   const lowBad = (value, [light, medium, heavy]) => {
     if (value <= heavy) return 3;
@@ -609,6 +814,7 @@ function balanceWeight(event, state) {
   bonus += hiddenRouteWeight(event, state);
   bonus += bpBufferWeight(event, state);
   bonus += stabilityPressureWeight(event, state);
+  bonus += progressionPhaseWeight(event, state);
   const recentPacks = state.memory.recentPacks || [];
   const recentTags = state.memory.recentTags || [];
   const recentRoles = state.memory.recentRoles || [];
@@ -652,10 +858,18 @@ function chainUrgency(event, state) {
   score += thresholdMomentum(state.relations, conditions.relationMin, "min");
   score += thresholdMomentum(state.relations, conditions.relationMax, "max");
   score += (conditions.alternatives?.length || 0) * 0.25;
+  if (conditions.alternatives?.length) {
+    score += Math.max(...conditions.alternatives.map((alternative) => alternativeFulfillmentScore(state, alternative)));
+  }
   score += chainRouteUrgency(event, state);
   if (state.memory.scheduledEffects.length >= 3) score += 0.35;
   if ((state.memory.recentRoles || []).at(-1) === event.role) score -= 0.6;
   if ((state.memory.recentTitles || []).includes(event.title)) score -= 1.4;
+  score += progressionPhaseWeight(event, state);
+  if (COMBO_CHAIN_IDS.has(event.id)) {
+    if (state.round >= 6) score += 0.7;
+    if (state.round >= 9) score += 0.8;
+  }
 
   const profile = stablePlayProfile(state);
   if (profile.level >= 3.2) {
@@ -668,6 +882,106 @@ function chainUrgency(event, state) {
     if (profile.lowRisk && event.id === "boardroom_illusion") score += 1;
     if ((profile.stableCash || profile.stableTeam) && safeReliefIds.includes(event.id)) score -= 1.1;
   }
+
+  return score;
+}
+
+function storyArcDepth(state, storyArc) {
+  const prefix = STORY_ARC_FLAG_PREFIXES[storyArc];
+  const arcFlags = prefix ? (state.flags || []).filter((flag) => flag.startsWith(prefix)).length : 0;
+  const recentArcs = state.memory.recentStoryArcs || [];
+  const continuity = recentRepeats(recentArcs, storyArc);
+  let score = arcFlags * 0.95 + continuity * 0.9;
+
+  if (storyArc === "predecessor_trace") {
+    const profile = bpBufferProfile(state);
+    if (state.round >= 7) score += profile.level * 0.18;
+  }
+  if (storyArc === "friend_project") {
+    if (state.hidden.bossDependency >= 38) score += 0.9;
+    if (state.hidden.politicalHeat >= 36) score += 0.7;
+    if (state.hidden.riskExposure >= 36) score += 0.6;
+  }
+  if (storyArc === "showcase_narrative") {
+    if (state.hidden.bossDependency >= 34) score += 0.7;
+    if (state.hidden.dataMaturity <= 34) score += 0.7;
+    if (state.trust <= 42) score += 0.5;
+  }
+
+  return score;
+}
+
+function storyArcProgress(state, storyArc) {
+  const prefix = STORY_ARC_FLAG_PREFIXES[storyArc];
+  const flags = prefix ? (state.flags || []).filter((flag) => flag.startsWith(prefix)).length : 0;
+  const seen = (STORY_ARC_IDS[storyArc] || []).filter((id) => state.usedIds.includes(id)).length;
+  const total = (STORY_ARC_IDS[storyArc] || []).length;
+  return {
+    flags,
+    seen,
+    total,
+    complete: total > 0 && seen >= total,
+    started: flags > 0 || seen > 0,
+    active: (flags > 0 || seen > 0) && !(total > 0 && seen >= total),
+  };
+}
+
+function activeStoryArcCount(state) {
+  return Object.keys(STORY_ARC_IDS).filter((storyArc) => storyArcProgress(state, storyArc).active).length;
+}
+
+function roundsSinceStory(state) {
+  const recentKinds = state.memory.recentKinds || [];
+  for (let i = recentKinds.length - 1; i >= 0; i -= 1) {
+    if (recentKinds[i] === "story") return recentKinds.length - 1 - i;
+  }
+  return recentKinds.length;
+}
+
+function storyUrgency(event, state) {
+  const conditions = event.conditions || {};
+  const arc = storyArcProgress(state, event.storyArc);
+  const activeArcs = activeStoryArcCount(state);
+  let score = event.priority ?? 1;
+  score += (conditions.allFlags || []).filter((flag) => state.flags.includes(flag)).length * 0.8;
+  if ((conditions.anyFlags || []).some((flag) => state.flags.includes(flag))) score += 0.5;
+  score += thresholdMomentum(state, conditions.statMin, "min");
+  score += thresholdMomentum(state, conditions.statMax, "max");
+  score += thresholdMomentum(state.hidden, conditions.hiddenMin, "min");
+  score += thresholdMomentum(state.hidden, conditions.hiddenMax, "max");
+  score += thresholdMomentum(state.relations, conditions.relationMin, "min");
+  score += thresholdMomentum(state.relations, conditions.relationMax, "max");
+  if (conditions.alternatives?.length) {
+    score += Math.max(...conditions.alternatives.map((alternative) => alternativeFulfillmentScore(state, alternative)));
+  }
+  score += storyArcDepth(state, event.storyArc);
+  score += progressionPhaseWeight(event, state);
+
+  const recentStoryArcs = state.memory.recentStoryArcs || [];
+  if (arc.started) {
+    score += 0.8;
+    score += arc.flags * 0.55;
+    if (arc.seen >= 1) score += 0.55;
+    if (arc.seen >= 2) score += 1.15;
+    if (recentStoryArcs.at(-1) === event.storyArc) score += 2.1;
+    else if (recentStoryArcs.includes(event.storyArc)) score += 1.05;
+  } else {
+    if (activeArcs >= 2) score -= 2.2;
+    else if (activeArcs >= 1) score -= 0.9;
+    if (roundsSinceStory(state) >= 3 && state.round >= 8) score += 0.75;
+    if (activeArcs === 0 && state.round >= 9) score += 0.5;
+  }
+
+  const recentKinds = state.memory.recentKinds || [];
+  const storyStreak = recentRepeats(recentKinds, "story");
+  if (storyStreak >= 2 && !arc.started) score -= 1.1;
+  if (storyStreak >= 3) score -= 0.6;
+  if ((state.memory.recentTitles || []).includes(event.title)) score -= 1.5;
+
+  if (state.round <= 4) score -= 2.8;
+  else if (state.round <= 7) score -= 0.8;
+  else if (state.round >= 11) score += arc.started ? 1.1 : 0.7;
+  if (state.round >= 13 && arc.started) score += 0.55;
 
   return score;
 }
@@ -696,8 +1010,39 @@ function pickChainEvent(state) {
   return weightedPick(pool);
 }
 
+function pickStoryChainEvent(state) {
+  const eligible = storyChains.filter((event) => !state.usedIds.includes(event.id) && matchesConditions(state, event.conditions));
+  if (!eligible.length) return null;
+
+  const scored = eligible
+    .map((event) => ({ ...event, urgency: storyUrgency(event, state) }))
+    .sort((a, b) => b.urgency - a.urgency);
+
+  const top = scored[0];
+  const recentKinds = state.memory.recentKinds || [];
+  const storyStreak = recentRepeats(recentKinds, "story");
+  if (state.round <= 5 && top.urgency < 10.4) return null;
+  if (recentKinds.at(-1) === "story" && storyStreak >= 2 && top.urgency < 11.2) return null;
+
+  const pool = scored
+    .filter((event) => event.urgency >= top.urgency - 1)
+    .slice(0, 3)
+    .map((event) => ({ ...event, weight: event.urgency }));
+
+  return weightedPick(pool);
+}
+
 function chooseEvent(state) {
+  const storyEvent = pickStoryChainEvent(state);
   const chainEvent = pickChainEvent(state);
+  if (storyEvent && chainEvent) {
+    const arc = storyArcProgress(state, storyEvent.storyArc);
+    return weightedPick([
+      { ...storyEvent, weight: Math.max(0.1, storyEvent.urgency + (arc.started ? 1.35 : 0.25)) },
+      { ...chainEvent, weight: Math.max(0.1, chainEvent.urgency) },
+    ]);
+  }
+  if (storyEvent) return storyEvent;
   if (chainEvent) return chainEvent;
 
   const phase = phaseOfRound(state.round);
@@ -782,7 +1127,7 @@ function scenarioToState(scenario = sample(scenarios)) {
     ended: false,
     flags: [],
     usedIds: [],
-    memory: { scheduledEffects: [], delayedNotes: [], quarterlyNotes: [], recentPacks: [], recentTags: [], recentTitles: [], recentRoles: [], recentFlags: [], recentKinds: [], latestOutcome: null, pendingTransition: null, causalLedger: [] },
+    memory: { scheduledEffects: [], delayedNotes: [], quarterlyNotes: [], recentPacks: [], recentTags: [], recentTitles: [], recentRoles: [], recentFlags: [], recentKinds: [], recentStoryArcs: [], latestOutcome: null, resultQueue: [], resultIndex: 0, pendingTransition: null, causalLedger: [] },
     ending: null,
   };
 }
@@ -1079,14 +1424,7 @@ function shortSourceTraceLine(note) {
 
 function chainSpeech(event, state) {
   const base = eventSpeech(event);
-  const hint = chainCauseHints[event.id];
-  const routeId = findRouteId({ chainId: event.id, flags: state.flags });
-  if (!hint) return base;
-  return {
-    ...base,
-    cause: eventQuote(hint),
-    trail: routeTrailText(routeId, state.memory.causalLedger || [], event.title),
-  };
+  return base;
 }
 
 function topDeltaEntries(delta = {}, count = 2) {
@@ -1232,6 +1570,19 @@ function delayedStoryLine(note) {
   const body = singleLine(note.desc || note.title);
   const opener = delayedStoryOpeners[note.routeId] || "前面埋下的那笔后账，现在回来收账了";
   return body ? `${opener}：${body}` : opener;
+}
+
+function buildDelayedOutcome(note) {
+  if (!note) return null;
+  return {
+    kind: "delayed",
+    role: note.sourceTitle ? `后账 · ${note.sourceTitle}` : "后账",
+    avatar: "⏳",
+    choiceLabel: "后账追上来了",
+    speaker: note.title || "后账",
+    quote: eventQuote(note.title || "前面的账，现在回来收了"),
+    followup: delayedStoryLine(note),
+  };
 }
 
 function conciseOutcomeFollowup({ override, highlights, dueNote, routeId }) {
@@ -1544,12 +1895,13 @@ function SwipeCard({ event, onChoose, onPreviewChange }) {
 }
 
 function OutcomeCard({ outcome }) {
+  const isDelayed = outcome.kind === "delayed";
   return (
     <div style={{ width: "100%", maxWidth: 340, display: "grid", justifyItems: "center", gap: 14 }}>
-      <div style={{ width: "min(100%, 268px)", minHeight: "clamp(220px, 30vh, 250px)", borderRadius: 32, background: "#fffdf8", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 18px 50px rgba(0,0,0,0.12)", padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top, rgba(245,231,215,0.8), transparent 44%)" }} />
+      <div style={{ width: "min(100%, 268px)", minHeight: "clamp(220px, 30vh, 250px)", borderRadius: 32, background: isDelayed ? "#fff8f5" : "#fffdf8", border: isDelayed ? "1px solid rgba(172,86,89,0.10)" : "1px solid rgba(0,0,0,0.05)", boxShadow: isDelayed ? "0 18px 52px rgba(120,55,63,0.14)" : "0 18px 50px rgba(0,0,0,0.12)", padding: "clamp(22px, 3.8vw, 28px)", display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: isDelayed ? "radial-gradient(circle at top, rgba(255,231,226,0.84), transparent 44%)" : "radial-gradient(circle at top, rgba(245,231,215,0.8), transparent 44%)" }} />
         <div style={{ position: "relative", display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={alertMetaStyle}>结果</span>
+          <span style={isDelayed ? delayedMetaStyle : alertMetaStyle}>{isDelayed ? "后账" : "结果"}</span>
           <span style={eventMetaStyle}>{outcome.choiceLabel}</span>
         </div>
         <div style={{ position: "relative", display: "grid", justifyItems: "center", gap: 12 }}>
@@ -1557,7 +1909,7 @@ function OutcomeCard({ outcome }) {
         </div>
         <div style={{ height: 12 }} />
       </div>
-      <div style={{ fontSize: 11, color: "#9ca3af", letterSpacing: "0.08em" }}>点击任意位置进入下一题</div>
+      <div style={{ fontSize: 11, color: "#9ca3af", letterSpacing: "0.08em" }}>点击任意位置继续</div>
     </div>
   );
 }
@@ -1594,8 +1946,8 @@ function BriefingCard({ onStart }) {
         <div style={briefingEyebrowStyle}>游戏提示</div>
         <div style={briefingTitleStyle}>这是一款财务BP职场生存模拟游戏</div>
         <div style={briefingBodyStyle}>
-          <p style={briefingParagraphStyle}>很多选择没有正确答案，只有取舍。</p>
-          <p style={briefingParagraphStyle}>你做的每个决定，不只影响当下，也会在未来带来意想不到的变化。</p>
+          <p style={briefingParagraphStyle}>你要处理的，不只是增长、现金和团队，还有那些没人想当场接住的冲突、场面和代价。</p>
+          <p style={briefingParagraphStyle}>很多选择没有正确答案，只有取舍。你做的每个决定，不只影响当下，也会在未来带来意想不到的变化。</p>
           <p style={{ ...briefingParagraphStyle, color: "#2f241e", fontWeight: 700 }}>而你能做的，只有拼命维持那一点脆弱的平衡。</p>
         </div>
       </motion.div>
@@ -1616,7 +1968,9 @@ function App() {
   const annualSummary = useMemo(() => buildQuarterSummary(state), [state]);
   const persona = useMemo(() => choosePersona(state), [state]);
   const currentSpeech = useMemo(() => currentEvent.priority ? chainSpeech(currentEvent, state) : eventSpeech(currentEvent), [currentEvent, state]);
-  const latestOutcome = state.memory.latestOutcome;
+  const resultQueue = state.memory.resultQueue || [];
+  const resultIndex = state.memory.resultIndex || 0;
+  const latestOutcome = resultQueue[resultIndex] || state.memory.latestOutcome;
   const theme = useMemo(() => sceneTheme(state.screen, currentEvent, state.ending), [state.screen, currentEvent, state.ending]);
   const surfacePanelStyle = useMemo(() => ({ ...panelStyle, background: theme.panelBg, border: theme.panelBorder, boxShadow: theme.panelShadow }), [theme]);
   const surfaceBoxStyle = useMemo(() => ({ ...boxedStyle, background: theme.boxBg }), [theme]);
@@ -1704,9 +2058,29 @@ function App() {
   };
 
   const continueFromResult = () => {
+    const queue = state.memory.resultQueue || [];
+    const index = state.memory.resultIndex || 0;
+    if (index < queue.length - 1) {
+      setState((s) => ({
+        ...s,
+        memory: {
+          ...s.memory,
+          resultIndex: (s.memory.resultIndex || 0) + 1,
+        },
+      }));
+      return;
+    }
     const pending = state.memory.pendingTransition;
     if (!pending) {
-      setState((s) => ({ ...s, screen: "event" }));
+      setState((s) => ({
+        ...s,
+        screen: "event",
+        memory: {
+          ...s.memory,
+          resultQueue: [],
+          resultIndex: 0,
+        },
+      }));
       return;
     }
     setState((s) => ({
@@ -1717,6 +2091,8 @@ function App() {
       screen: pending.screen,
       memory: {
         ...s.memory,
+        resultQueue: [],
+        resultIndex: 0,
         pendingTransition: null,
       },
     }));
@@ -1746,7 +2122,10 @@ function App() {
         recentTags: pushRecentHistory(state.memory.recentTags, currentEvent.tags || [], 6),
         recentTitles: pushRecentHistory(state.memory.recentTitles, [currentEvent.title], 3),
         recentFlags: pushRecentHistory(state.memory.recentFlags, choice.flags || [], 6),
-        recentKinds: pushRecentHistory(state.memory.recentKinds, [currentEvent.priority ? "chain" : "base"], 3),
+        recentKinds: pushRecentHistory(state.memory.recentKinds, [currentEvent.storyArc ? "story" : currentEvent.priority ? "chain" : "base"], 3),
+        recentStoryArcs: currentEvent.storyArc
+          ? pushRecentHistory(state.memory.recentStoryArcs, [currentEvent.storyArc], 4)
+          : state.memory.recentStoryArcs,
         causalLedger: pushLedger(state.memory.causalLedger, routeId ? {
           routeId,
           kind: currentEvent.priority ? "chain-choice" : "choice",
@@ -1775,7 +2154,12 @@ function App() {
       memory: {
         ...afterDelayed.memory,
         delayedNotes: notes.slice(-3),
-        latestOutcome: buildChoiceOutcome(currentEvent, choice, side, notes, projected),
+        latestOutcome: buildChoiceOutcome(currentEvent, choice, side, [], projected),
+        resultQueue: [
+          buildChoiceOutcome(currentEvent, choice, side, [], projected),
+          ...(notes.length ? [buildDelayedOutcome(notes[0])].filter(Boolean) : []),
+        ],
+        resultIndex: 0,
       },
     };
     advance(next);
@@ -1983,6 +2367,7 @@ const statusPillStyle = { background: "#fbf7ef", borderRadius: 16, padding: "10p
 const statusLabelStyle = { fontSize: 10, color: "#6b7280", letterSpacing: "0.14em", textTransform: "uppercase" };
 const eventMetaStyle = { padding: "5px 10px", borderRadius: 999, background: "#f6f1e8", fontSize: 10, color: "#6b7280", letterSpacing: "0.08em", textTransform: "uppercase" };
 const alertMetaStyle = { ...eventMetaStyle, background: "#fff1f2", color: "#be123c" };
+const delayedMetaStyle = { ...eventMetaStyle, background: "#fbe9e4", color: "#9f4f4b" };
 const speechCauseStyle = { justifySelf: "center", maxWidth: 336, padding: "8px 12px", borderRadius: 16, background: "#fbf7ef", border: "1px solid rgba(159,107,79,0.14)", fontSize: 12, lineHeight: 1.55, color: "#8a5d45", fontFamily: '"Iowan Old Style", "Georgia", serif' };
 const speechTrailStyle = { justifySelf: "center", maxWidth: 336, fontSize: 11, lineHeight: 1.55, color: "#9f6b4f", letterSpacing: "0.02em", fontFamily: '"Iowan Old Style", "Georgia", serif' };
 const speechRoleStyle = { fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9f6b4f" };

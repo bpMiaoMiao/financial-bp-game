@@ -3226,5 +3226,587 @@ export const chainEvents = [
       ],
       "schedule": []
     }
+  },
+  {
+    "id": "paper_runway",
+    "priority": 9,
+    "role": "资金经理",
+    "avatar": "🪫",
+    "title": "账上看着还能转，实际上全靠一笔笔往后挪。",
+    "desc": "回款、借款和内部调拨被你们拼成了一条表面还在运转的跑道，但谁都知道那不是正常飞法。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "long_terms",
+            "bridge_loan"
+          ]
+        },
+        {
+          "allFlags": [
+            "bad_debt_signal",
+            "fund_pool_shift"
+          ]
+        },
+        {
+          "allFlags": [
+            "long_terms",
+            "fund_pool_shift"
+          ],
+          "hiddenMin": {
+            "executionDebt": 28
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "把洞摊开",
+      "effect": {
+        "cash": -4,
+        "trust": -1
+      },
+      "hidden": {
+        "executionDebt": -2,
+        "riskExposure": -3
+      },
+      "relations": {
+        "finance": 2,
+        "boss": -1
+      },
+      "flags": [
+        "runway_named"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续挪着走",
+      "effect": {
+        "cash": 1,
+        "trust": 2
+      },
+      "hidden": {
+        "executionDebt": 4,
+        "riskExposure": 4,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "boss": 1,
+        "finance": -2
+      },
+      "flags": [
+        "paper_runway"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "numbers_hostage",
+    "priority": 9,
+    "role": "财务总监",
+    "avatar": "📚",
+    "title": "数字已经不是拿来看清问题的，是拿来让问题继续往下走的。",
+    "desc": "你们一边补口径、一边修话术，最后留在桌上的不再是数字本身，而是一个谁都暂时能讲下去的版本。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "manual_reconcile",
+            "close_rush_patch"
+          ]
+        },
+        {
+          "allFlags": [
+            "meeting_rewrite",
+            "board_deck_polish"
+          ]
+        },
+        {
+          "allFlags": [
+            "manual_reconcile",
+            "board_deck_polish"
+          ],
+          "hiddenMax": {
+            "dataMaturity": 34
+          },
+          "hiddenMin": {
+            "executionDebt": 34
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "停下重算",
+      "effect": {
+        "trust": -3,
+        "team": -1
+      },
+      "hidden": {
+        "dataMaturity": 4,
+        "executionDebt": -4,
+        "bossDependency": -1
+      },
+      "relations": {
+        "finance": 2,
+        "boss": -1
+      },
+      "flags": [
+        "rebuild_numbers"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续给版本",
+      "effect": {
+        "trust": 2,
+        "growth": 1
+      },
+      "hidden": {
+        "dataMaturity": -3,
+        "executionDebt": 4,
+        "bossDependency": 3,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "boss": 2,
+        "finance": -2
+      },
+      "flags": [
+        "numbers_hostage"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "hallway_silence",
+    "priority": 8,
+    "role": "HRBP",
+    "avatar": "🚪",
+    "title": "走廊里安静得过头了，像大家都学会了把情绪省给自己。",
+    "desc": "没人吵，也没人闹，但很多人已经不再把问题往桌上放，只把力气往下收。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "freeze_hiring",
+            "weekend_overtime"
+          ]
+        },
+        {
+          "allFlags": [
+            "burn_team",
+            "hold_salary"
+          ]
+        },
+        {
+          "allFlags": [
+            "freeze_hiring",
+            "burn_team"
+          ],
+          "hiddenMin": {
+            "orgFatigue": 38
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "补人补喘息",
+      "effect": {
+        "cash": -4,
+        "team": 3
+      },
+      "hidden": {
+        "orgFatigue": -5,
+        "executionDebt": -1
+      },
+      "relations": {
+        "hr": 2,
+        "boss": -1
+      },
+      "flags": [
+        "hallway_opened"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续顶住",
+      "effect": {
+        "cash": 1,
+        "trust": 1,
+        "team": -2
+      },
+      "hidden": {
+        "orgFatigue": 5,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "hr": -2,
+        "boss": 1
+      },
+      "flags": [
+        "hallway_silence"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "trained_to_wait",
+    "priority": 8,
+    "role": "渠道经理",
+    "avatar": "🛒",
+    "title": "客户和渠道都学会了，再等等，价格还会掉。",
+    "desc": "你们前面一轮轮放出去的折扣和返利，已经把“现在买”训练成了最不划算的决定。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "festival_promo",
+            "marketplace_coupon"
+          ]
+        },
+        {
+          "allFlags": [
+            "channel_rebate",
+            "low_margin_big_order"
+          ]
+        },
+        {
+          "allFlags": [
+            "festival_promo",
+            "channel_rebate"
+          ],
+          "hiddenMax": {
+            "customerTrust": 40
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "把口子收回来",
+      "effect": {
+        "growth": -4,
+        "trust": -1
+      },
+      "hidden": {
+        "marginHealth": 4,
+        "customerTrust": 2
+      },
+      "relations": {
+        "sales": -1,
+        "finance": 1
+      },
+      "flags": [
+        "price_reset"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "再冲一轮",
+      "effect": {
+        "growth": 2,
+        "cash": 1
+      },
+      "hidden": {
+        "marginHealth": -5,
+        "customerTrust": -4
+      },
+      "relations": {
+        "sales": 1,
+        "finance": -2
+      },
+      "flags": [
+        "trained_to_wait"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "proxy_signature",
+    "priority": 9,
+    "role": "老板助理",
+    "avatar": "✍️",
+    "title": "很多人其实不是在等老板拍板，是在等你先把名字放上去。",
+    "desc": "你突然发现，很多承诺和例外并不是先经过决策，而是先经过你这层默认会配合的签字动作。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "public_promise",
+            "need_boss_backing"
+          ]
+        },
+        {
+          "allFlags": [
+            "cross_line_approval",
+            "owner_friend_project"
+          ]
+        },
+        {
+          "allFlags": [
+            "sign_fast",
+            "favored_vendor"
+          ]
+        }
+      ],
+      "hiddenMin": {
+        "bossDependency": 36
+      }
+    },
+    "left": {
+      "label": "把名字收回来",
+      "effect": {
+        "trust": -3,
+        "team": 1
+      },
+      "hidden": {
+        "bossDependency": -4,
+        "riskExposure": -2,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "boss": -2,
+        "legal": 1
+      },
+      "flags": [
+        "signature_withdrawn"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先签再说",
+      "effect": {
+        "trust": 2,
+        "cash": 1
+      },
+      "hidden": {
+        "bossDependency": 5,
+        "riskExposure": 4,
+        "politicalHeat": 2
+      },
+      "relations": {
+        "boss": 2,
+        "legal": -2
+      },
+      "flags": [
+        "proxy_signature"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "quality_claim_room",
+    "priority": 8,
+    "role": "客服负责人",
+    "avatar": "📦",
+    "title": "售后、采购和客服第一次坐在了一张桌上，谁都不再愿意只讲单点问题。",
+    "desc": "前面那些被你们拆开处理的返修、替代料和补件，终于长成了一个不得不整体面对的质量问题。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "procurement_substitute",
+            "return_repair_cost"
+          ]
+        },
+        {
+          "allFlags": [
+            "returns_restock",
+            "parts_borrow"
+          ]
+        },
+        {
+          "allFlags": [
+            "replacement_parts",
+            "procurement_substitute"
+          ],
+          "hiddenMax": {
+            "customerTrust": 40
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "承认整批排查",
+      "effect": {
+        "cash": -4,
+        "trust": -1
+      },
+      "hidden": {
+        "customerTrust": 3,
+        "marginHealth": 1,
+        "riskExposure": -1
+      },
+      "relations": {
+        "ops": 1,
+        "sales": -1
+      },
+      "flags": [
+        "quality_batch_fix"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续拆开处理",
+      "effect": {
+        "cash": 1,
+        "trust": 1
+      },
+      "hidden": {
+        "customerTrust": -4,
+        "riskExposure": 3
+      },
+      "relations": {
+        "ops": -1,
+        "sales": 1
+      },
+      "flags": [
+        "quality_split"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "inventory_mirage",
+    "priority": 8,
+    "role": "仓储主管",
+    "avatar": "📉",
+    "title": "一边断货，一边压货，仓里终于长成了最难解释的样子。",
+    "desc": "你们同时在补爆款、囤旧货、追紧急补货，最后连仓自己都开始长成一张看不懂的报表。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "inventory_push",
+            "hot_sku_stockout"
+          ]
+        },
+        {
+          "allFlags": [
+            "emergency_restock",
+            "slow_moving_overhang"
+          ]
+        },
+        {
+          "allFlags": [
+            "inventory_push",
+            "emergency_restock"
+          ],
+          "hiddenMin": {
+            "executionDebt": 28
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "先清仓再补",
+      "effect": {
+        "cash": -2,
+        "growth": -2,
+        "team": 1
+      },
+      "hidden": {
+        "executionDebt": -2,
+        "marginHealth": 2
+      },
+      "relations": {
+        "ops": 2
+      },
+      "flags": [
+        "inventory_reset"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "两头继续顶",
+      "effect": {
+        "growth": 1,
+        "cash": -2,
+        "team": -2
+      },
+      "hidden": {
+        "executionDebt": 4,
+        "orgFatigue": 2
+      },
+      "relations": {
+        "ops": -2
+      },
+      "flags": [
+        "inventory_mirage"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "middle_seat_protocol",
+    "priority": 9,
+    "role": "老财务BP",
+    "avatar": "🪑",
+    "title": "你突然发现，很多人并不是临时来找你，他们只是在按这个位置的默认流程办事。",
+    "desc": "解释、缓冲、翻译、改话术，这些动作像一套早就存在的 protocol，而不是这次刚好轮到你多做一点。",
+    "conditions": {
+      "alternatives": [
+        {
+          "allFlags": [
+            "go_explain",
+            "version_first"
+          ]
+        },
+        {
+          "allFlags": [
+            "catch_between",
+            "explain_not_decide"
+          ]
+        },
+        {
+          "allFlags": [
+            "go_explain",
+            "meeting_rewrite"
+          ],
+          "hiddenMin": {
+            "bossDependency": 34,
+            "politicalHeat": 34
+          }
+        }
+      ]
+    },
+    "left": {
+      "label": "把流程打断",
+      "effect": {
+        "trust": -2,
+        "team": 2
+      },
+      "hidden": {
+        "bossDependency": -3,
+        "politicalHeat": -2,
+        "dataMaturity": 1
+      },
+      "relations": {
+        "boss": -2,
+        "finance": 1
+      },
+      "flags": [
+        "break_middle_protocol"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续照做",
+      "effect": {
+        "trust": 1,
+        "team": -2
+      },
+      "hidden": {
+        "bossDependency": 3,
+        "politicalHeat": 2,
+        "orgFatigue": 2
+      },
+      "relations": {
+        "boss": 1,
+        "finance": -1
+      },
+      "flags": [
+        "middle_seat_protocol"
+      ],
+      "schedule": []
+    }
   }
 ];
