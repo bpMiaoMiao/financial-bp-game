@@ -1,16 +1,30 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { RotateCcw, Skull, Volume2, VolumeX } from "lucide-react";
+import { RotateCcw, Skull, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { scenarios, initialRelations } from "./data/scenarios";
 import { baseEvents } from "./data/baseEvents";
 import { chainEvents } from "./data/chainEvents";
-import { storyChains } from "./data/storyChains";
+import { storyMainlineChains } from "./data/storyMainlines";
+import { storySidechains } from "./data/storySidechains";
 import { delayedEffects } from "./data/delayedEffects";
 import { chainCauseHints, chainRouteConfigs, chainRoutePressure } from "./data/chainMeta";
+import {
+  achievementDefs,
+  achievementMap,
+  achievementCategoryOrder,
+  applyAchievementUnlocks,
+  categoryProgress,
+  completedArcCount,
+  seenEndingIds,
+  unlockedKnowledgeCount,
+  TRACKED_STORY_ARCS,
+} from "./data/achievements";
+import { loadMetaProgress, saveMetaProgress } from "./data/metaProgress";
 import { outcomeOverrides } from "./data/outcomeOverrides";
 import { personaDefs } from "./data/personaDefs";
 
 const clamp = (n, min = 0, max = 100) => Math.max(min, Math.min(max, n));
+const storyChains = [...storyMainlineChains, ...storySidechains];
 const sample = (items) => items[Math.floor(Math.random() * items.length)];
 const weightedPick = (items) => {
   const total = items.reduce((sum, item) => sum + (item.weight ?? 1), 0);
@@ -107,6 +121,7 @@ function matchesThresholdMap(target, thresholds = {}, mode = "min") {
 
 function matchesConditions(state, conditions) {
   if (!conditions) return true;
+  const knowledge = state.metaProgress?.knowledge || {};
   const checks = [
     conditions.roundMin == null || state.round >= conditions.roundMin,
     conditions.roundMax == null || state.round <= conditions.roundMax,
@@ -119,10 +134,45 @@ function matchesConditions(state, conditions) {
     matchesThresholdMap(state.hidden, conditions.hiddenMax, "max"),
     matchesThresholdMap(state.relations, conditions.relationMin, "min"),
     matchesThresholdMap(state.relations, conditions.relationMax, "max"),
+    (conditions.requiresKnowledge || []).every((key) => knowledge[key]),
+    Object.entries(conditions.storyProgressMin || {}).every(([storyArc, stage]) => crossRunStoryStage(state, storyArc) >= stage),
   ];
   if (checks.some((ok) => !ok)) return false;
   if (!conditions.alternatives?.length) return true;
   return conditions.alternatives.some((alternative) => matchesConditions(state, alternative));
+}
+
+function stripVariantFields(variant = {}) {
+  const { when, conditions, ...rest } = variant;
+  return rest;
+}
+
+function resolveChoiceVariants(choice, state) {
+  if (!choice?.variants?.length) return choice;
+  let resolved = { ...choice };
+  let matchedKnowledgeVariant = false;
+  for (const variant of choice.variants) {
+    const variantConditions = variant.when || variant.conditions;
+    if (matchesConditions(state, variantConditions)) {
+      if ((variantConditions?.requiresKnowledge || []).length) matchedKnowledgeVariant = true;
+      resolved = {
+        ...resolved,
+        ...stripVariantFields(variant),
+      };
+    }
+  }
+  delete resolved.variants;
+  if (matchedKnowledgeVariant) resolved.__knowledgeVariantApplied = true;
+  return resolved;
+}
+
+function resolveEventVariants(event, state) {
+  if (!event) return event;
+  return {
+    ...event,
+    left: resolveChoiceVariants(event.left, state),
+    right: resolveChoiceVariants(event.right, state),
+  };
 }
 
 function alternativeFulfillmentScore(state, alternative = {}) {
@@ -544,6 +594,7 @@ const STORY_ARC_FLAG_PREFIXES = {
   vendor_shadow: "vendor_shadow_",
   bi_anomaly: "bi_anomaly_",
   warehouse_backdoor: "warehouse_backdoor_",
+  mainline_reveal: "mainline_",
 };
 
 const STORY_ARC_IDS = storyChains.reduce((acc, event) => {
@@ -551,6 +602,22 @@ const STORY_ARC_IDS = storyChains.reduce((acc, event) => {
   acc[event.storyArc].push(event.id);
   return acc;
 }, {});
+
+const STORY_ARC_STAGE_BY_ID = (() => {
+  const stageMap = {};
+  const counts = {};
+  for (const event of storyChains) {
+    counts[event.storyArc] = (counts[event.storyArc] || 0) + 1;
+    stageMap[event.id] = counts[event.storyArc];
+  }
+  return stageMap;
+})();
+
+function crossRunStoryStage(state, storyArc) {
+  const currentSeen = (STORY_ARC_IDS[storyArc] || []).filter((id) => state.usedIds.includes(id)).length;
+  const persisted = state.metaProgress?.storyProgress?.[storyArc] || 0;
+  return Math.max(currentSeen, persisted);
+}
 
 function conditionComplexity(conditions = {}) {
   let score = 0;
@@ -848,6 +915,7 @@ function chainRouteUrgency(event, state) {
 
 function chainUrgency(event, state) {
   const conditions = event.conditions || {};
+  const preferredArc = preferredStoryArc(state);
   let score = event.priority ?? 1;
   score += (conditions.allFlags || []).filter((flag) => state.flags.includes(flag)).length * 0.8;
   if ((conditions.anyFlags || []).some((flag) => state.flags.includes(flag))) score += 0.5;
@@ -883,6 +951,15 @@ function chainUrgency(event, state) {
     if ((profile.stableCash || profile.stableTeam) && safeReliefIds.includes(event.id)) score -= 1.1;
   }
 
+  if (preferredArc) {
+    const preferredProgress = storyArcProgress(state, preferredArc);
+    if (preferredProgress.active) {
+      score -= 0.8;
+      if ((state.memory.recentKinds || []).at(-1) === "story") score -= 0.45;
+      if (preferredProgress.seen >= 1) score -= 0.35;
+    }
+  }
+
   return score;
 }
 
@@ -907,6 +984,25 @@ function storyArcDepth(state, storyArc) {
     if (state.hidden.dataMaturity <= 34) score += 0.7;
     if (state.trust <= 42) score += 0.5;
   }
+  if (storyArc === "mainline_reveal") {
+    const knowledge = state.metaProgress?.knowledge || {};
+    if (
+      knowledge.knows_predecessor_loop &&
+      knowledge.knows_showcase_is_performance &&
+      knowledge.knows_friend_project_real_purpose
+    ) {
+      score += 3.2;
+    }
+    if (
+      knowledge.knows_watchlist_is_allocation &&
+      knowledge.knows_numbers_need_a_narrator &&
+      knowledge.knows_double_reality
+    ) {
+      score += 2.6;
+    }
+    if (hasAnyFlag(state, ["buffer_role_reveal", "seat_without_power", "replacement_ready"])) score += 2.6;
+    if (state.round >= 14) score += 1.6;
+  }
 
   return score;
 }
@@ -930,6 +1026,29 @@ function activeStoryArcCount(state) {
   return Object.keys(STORY_ARC_IDS).filter((storyArc) => storyArcProgress(state, storyArc).active).length;
 }
 
+function preferredStoryArc(state) {
+  const activeArcs = Object.keys(STORY_ARC_IDS)
+    .map((storyArc) => ({
+      storyArc,
+      progress: storyArcProgress(state, storyArc),
+      depth: storyArcDepth(state, storyArc),
+    }))
+    .filter(({ progress }) => progress.active);
+
+  if (!activeArcs.length) return null;
+
+  const recentStoryArcs = state.memory.recentStoryArcs || [];
+  activeArcs.sort((a, b) => {
+    const aRecent = recentStoryArcs.at(-1) === a.storyArc ? 3 : recentStoryArcs.includes(a.storyArc) ? 1 : 0;
+    const bRecent = recentStoryArcs.at(-1) === b.storyArc ? 3 : recentStoryArcs.includes(b.storyArc) ? 1 : 0;
+    const aScore = a.progress.seen * 2.2 + a.progress.flags * 1.5 + a.depth + aRecent;
+    const bScore = b.progress.seen * 2.2 + b.progress.flags * 1.5 + b.depth + bRecent;
+    return bScore - aScore;
+  });
+
+  return activeArcs[0]?.storyArc || null;
+}
+
 function roundsSinceStory(state) {
   const recentKinds = state.memory.recentKinds || [];
   for (let i = recentKinds.length - 1; i >= 0; i -= 1) {
@@ -942,6 +1061,7 @@ function storyUrgency(event, state) {
   const conditions = event.conditions || {};
   const arc = storyArcProgress(state, event.storyArc);
   const activeArcs = activeStoryArcCount(state);
+  const preferredArc = preferredStoryArc(state);
   let score = event.priority ?? 1;
   score += (conditions.allFlags || []).filter((flag) => state.flags.includes(flag)).length * 0.8;
   if ((conditions.anyFlags || []).some((flag) => state.flags.includes(flag))) score += 0.5;
@@ -959,29 +1079,38 @@ function storyUrgency(event, state) {
 
   const recentStoryArcs = state.memory.recentStoryArcs || [];
   if (arc.started) {
-    score += 0.8;
-    score += arc.flags * 0.55;
-    if (arc.seen >= 1) score += 0.55;
-    if (arc.seen >= 2) score += 1.15;
-    if (recentStoryArcs.at(-1) === event.storyArc) score += 2.1;
-    else if (recentStoryArcs.includes(event.storyArc)) score += 1.05;
+    score += 1.4;
+    score += arc.flags * 0.85;
+    if (arc.seen >= 1) score += 1.2;
+    if (arc.seen >= 2) score += 1.8;
+    if (recentStoryArcs.at(-1) === event.storyArc) score += 3.1;
+    else if (recentStoryArcs.includes(event.storyArc)) score += 1.6;
+    if (activeArcs >= 2 && recentStoryArcs.at(-1) !== event.storyArc) score -= 0.6;
+    if (preferredArc && preferredArc === event.storyArc) score += 1.7;
+    else if (preferredArc && preferredArc !== event.storyArc) score -= 0.55;
   } else {
-    if (activeArcs >= 2) score -= 2.2;
-    else if (activeArcs >= 1) score -= 0.9;
-    if (roundsSinceStory(state) >= 3 && state.round >= 8) score += 0.75;
-    if (activeArcs === 0 && state.round >= 9) score += 0.5;
+    if (activeArcs >= 2) score -= 4.1;
+    else if (activeArcs >= 1) score -= 2.1;
+    if (roundsSinceStory(state) >= 2 && state.round >= 7) score += 1.15;
+    if (activeArcs === 0 && state.round >= 8) score += 1;
   }
 
   const recentKinds = state.memory.recentKinds || [];
   const storyStreak = recentRepeats(recentKinds, "story");
-  if (storyStreak >= 2 && !arc.started) score -= 1.1;
-  if (storyStreak >= 3) score -= 0.6;
+  if (storyStreak >= 2 && !arc.started) score -= 1.8;
+  if (storyStreak >= 3 && !arc.started) score -= 0.8;
   if ((state.memory.recentTitles || []).includes(event.title)) score -= 1.5;
 
-  if (state.round <= 4) score -= 2.8;
-  else if (state.round <= 7) score -= 0.8;
-  else if (state.round >= 11) score += arc.started ? 1.1 : 0.7;
-  if (state.round >= 13 && arc.started) score += 0.55;
+  if (state.round <= 4) score -= 4.2;
+  else if (state.round <= 6) score -= 1.9;
+  else if (state.round >= 10) score += arc.started ? 1.5 : 0.8;
+  if (state.round >= 12 && arc.started) score += 0.7;
+  if (event.storyArc === "mainline_reveal") {
+    if (event.id === "mainline_empty_seat" && !state.metaProgress?.mainlineProgress?.buffer_role_understood) score -= 6;
+    if (event.id === "mainline_nameplate" && !state.metaProgress?.mainlineProgress?.true_ending_available) score -= 7;
+    if (state.round >= 15) score += 1.8;
+    if (preferredArc === "mainline_reveal") score += 1.2;
+  }
 
   return score;
 }
@@ -1021,11 +1150,13 @@ function pickStoryChainEvent(state) {
   const top = scored[0];
   const recentKinds = state.memory.recentKinds || [];
   const storyStreak = recentRepeats(recentKinds, "story");
-  if (state.round <= 5 && top.urgency < 10.4) return null;
-  if (recentKinds.at(-1) === "story" && storyStreak >= 2 && top.urgency < 11.2) return null;
+  const topArc = storyArcProgress(state, top.storyArc);
+  if (state.round <= 5 && top.urgency < 11.2) return null;
+  if (!topArc.started && top.urgency < 10.7) return null;
+  if (recentKinds.at(-1) === "story" && storyStreak >= 2 && !topArc.started && top.urgency < 12) return null;
 
   const pool = scored
-    .filter((event) => event.urgency >= top.urgency - 1)
+    .filter((event) => event.urgency >= top.urgency - (storyArcProgress(state, event.storyArc).started ? 1.35 : 0.85))
     .slice(0, 3)
     .map((event) => ({ ...event, weight: event.urgency }));
 
@@ -1037,8 +1168,10 @@ function chooseEvent(state) {
   const chainEvent = pickChainEvent(state);
   if (storyEvent && chainEvent) {
     const arc = storyArcProgress(state, storyEvent.storyArc);
+    const preferredArc = preferredStoryArc(state);
+    const storyBonus = (arc.started ? 2.35 : 0.3) + (preferredArc === storyEvent.storyArc ? 1.75 : 0);
     return weightedPick([
-      { ...storyEvent, weight: Math.max(0.1, storyEvent.urgency + (arc.started ? 1.35 : 0.25)) },
+      { ...storyEvent, weight: Math.max(0.1, storyEvent.urgency + storyBonus) },
       { ...chainEvent, weight: Math.max(0.1, chainEvent.urgency) },
     ]);
   }
@@ -1297,7 +1430,7 @@ function pickEnding(prevState, nextState) {
   const newlyCrossed = active.filter((rule) => rule.crossed(prevState, nextState));
   const pool = newlyCrossed.length ? newlyCrossed : active;
   const chosen = [...pool].sort((a, b) => b.severity(nextState) - a.severity(nextState))[0];
-  return chosen.ending;
+  return { id: chosen.id, ...chosen.ending };
 }
 
 function buildQuarterSummary(state) {
@@ -1313,17 +1446,85 @@ function buildQuarterSummary(state) {
     { key: "bossDependency", value: state.hidden.bossDependency },
     { key: "politicalHeat", value: state.hidden.politicalHeat },
   ].sort((a, b) => b.value - a.value);
-  const notes = [];
-  if (state.hidden.marginHealth < 42) notes.push("你把规模往前推了一步，也把利润质量往后拖了一步。下次追问不会太远。");
-  if (state.hidden.executionDebt > 36) notes.push("这一季你解决了不少表面问题，但很多坑只是被往后压。流程和补丁债已经开始自己长大。");
-  if (state.hidden.orgFatigue > 40) notes.push("组织已经不是单纯地忙，而是在靠意志力硬撑。再多来几轮，先扛不住的会是人。");
-  if (state.hidden.dataMaturity > 52) notes.push("你开始不只是救火，而是在让系统和数据慢慢接手一部分判断。");
-  if (state.hidden.customerTrust < 42) notes.push("客户端的损伤已经从感觉变成事实，后面每一步都会更贵。");
-  if (state.hidden.riskExposure > 42) notes.push("之前留着以后再说的灰区，已经开始慢慢长成法务和审计会真的来问的东西。");
-  if (state.hidden.bossDependency > 40) notes.push("你离权力更近了，但边界也在一起变薄。后面找上门来的，不会再只是需要你支持。");
-  if (state.hidden.politicalHeat > 40) notes.push("很多问题开始不只是对错，而是谁来定义、谁来讲、最后又该谁背。");
-  if (notes.length === 0) notes.push("这一季没有明显爆点，但真正危险的局面往往也都是这样悄悄长出来的。");
-  return { notes, strength: strengths[0], pressure: pressures[0] };
+  const shown = new Set(state.memory.quarterlyNotes || []);
+  const candidates = [];
+  if (state.hidden.marginHealth < 42) {
+    candidates.push({
+      id: "margin_health_warning",
+      score: 42 - state.hidden.marginHealth,
+      text: "你把规模往前推了一步，也把利润质量往后拖了一步。下次追问不会太远。",
+    });
+  }
+  if (state.hidden.executionDebt > 36) {
+    candidates.push({
+      id: "execution_debt_warning",
+      score: state.hidden.executionDebt - 36,
+      text: "你解决了不少表面问题，但很多坑只是被往后压。流程和补丁债已经开始自己长大。",
+    });
+  }
+  if (state.hidden.orgFatigue > 40) {
+    candidates.push({
+      id: "org_fatigue_warning",
+      score: state.hidden.orgFatigue - 40,
+      text: "组织已经不是单纯地忙，而是在靠意志力硬撑。再多来几轮，先扛不住的会是人。",
+    });
+  }
+  if (state.hidden.dataMaturity > 52) {
+    candidates.push({
+      id: "data_maturity_strength",
+      score: state.hidden.dataMaturity - 52,
+      text: "你开始不只是救火，而是在让系统和数据慢慢接手一部分判断。",
+    });
+  }
+  if (state.hidden.customerTrust < 42) {
+    candidates.push({
+      id: "customer_trust_warning",
+      score: 42 - state.hidden.customerTrust,
+      text: "客户端的损伤已经从感觉变成事实，后面每一步都会更贵。",
+    });
+  }
+  if (state.hidden.riskExposure > 42) {
+    candidates.push({
+      id: "risk_exposure_warning",
+      score: state.hidden.riskExposure - 42,
+      text: "之前留着以后再说的灰区，已经开始慢慢长成法务和审计会真的来问的东西。",
+    });
+  }
+  if (state.hidden.bossDependency > 40) {
+    candidates.push({
+      id: "boss_dependency_warning",
+      score: state.hidden.bossDependency - 40,
+      text: "你离权力更近了，但边界也在一起变薄。后面找上门来的，不会再只是需要你支持。",
+    });
+  }
+  if (state.hidden.politicalHeat > 40) {
+    candidates.push({
+      id: "political_heat_warning",
+      score: state.hidden.politicalHeat - 40,
+      text: "很多问题开始不只是对错，而是谁来定义、谁来讲、最后又该谁背。",
+    });
+  }
+
+  const notes = candidates
+    .filter((item) => !shown.has(item.id))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
+
+  if (!notes.length) {
+    return {
+      notes: ["这一年没有新的明显爆点，只是旧问题还在继续长。"],
+      noteIds: [],
+      strength: strengths[0],
+      pressure: pressures[0],
+    };
+  }
+
+  return {
+    notes: notes.map((item) => item.text),
+    noteIds: notes.map((item) => item.id),
+    strength: strengths[0],
+    pressure: pressures[0],
+  };
 }
 
 function eventQuote(text = "") {
@@ -1644,6 +1845,7 @@ function buildChoiceOutcome(event, choice, side, notes = [], projected = null) {
   });
 
   return {
+    storyArc: event.storyArc || null,
     role: event.role,
     avatar: event.avatar,
     choiceLabel: side === "left" ? `你选了「${event.left.label}」` : `你选了「${event.right.label}」`,
@@ -1958,16 +2160,37 @@ function BriefingCard({ onStart }) {
 
 function App() {
   const [state, setState] = useState(() => scenarioToState());
+  const [metaProgress, setMetaProgress] = useState(() => loadMetaProgress());
   const [soundOn, setSoundOn] = useState(true);
   const [openingScreen, setOpeningScreen] = useState("producer");
   const [previewChoice, setPreviewChoice] = useState(null);
+  const [achievementsOpen, setAchievementsOpen] = useState(false);
+  const [achievementQueue, setAchievementQueue] = useState([]);
+  const [activeAchievementId, setActiveAchievementId] = useState(null);
   const audioRef = useRef(null);
   const prevSceneRef = useRef({ screen: state.screen, eventId: null });
+  const runtimeState = useMemo(() => ({ ...state, metaProgress }), [state, metaProgress]);
+  const unlockedAchievementCount = Object.keys(metaProgress.achievements || {}).length;
+  const unlockedKnowledgeTotal = useMemo(() => unlockedKnowledgeCount(metaProgress), [metaProgress]);
+  const completedStoryArcTotal = useMemo(() => completedArcCount(metaProgress, TRACKED_STORY_ARCS), [metaProgress]);
+  const seenEndingTotal = useMemo(() => seenEndingIds(metaProgress).length, [metaProgress]);
+  const achievementGroups = useMemo(
+    () =>
+      achievementCategoryOrder
+        .map((categoryLabel) => ({
+          category: categoryLabel,
+          progress: categoryProgress(metaProgress, categoryLabel),
+          items: achievementDefs.filter((achievement) => achievement.category === categoryLabel),
+        }))
+        .filter((group) => group.items.length),
+    [metaProgress],
+  );
 
-  const currentEvent = useMemo(() => chooseEvent(state), [state]);
-  const annualSummary = useMemo(() => buildQuarterSummary(state), [state]);
-  const persona = useMemo(() => choosePersona(state), [state]);
-  const currentSpeech = useMemo(() => currentEvent.priority ? chainSpeech(currentEvent, state) : eventSpeech(currentEvent), [currentEvent, state]);
+  const rawCurrentEvent = useMemo(() => chooseEvent(runtimeState), [runtimeState]);
+  const currentEvent = useMemo(() => resolveEventVariants(rawCurrentEvent, runtimeState), [rawCurrentEvent, runtimeState]);
+  const annualSummary = useMemo(() => buildQuarterSummary(runtimeState), [runtimeState]);
+  const persona = useMemo(() => choosePersona(runtimeState), [runtimeState]);
+  const currentSpeech = useMemo(() => currentEvent.priority ? chainSpeech(currentEvent, runtimeState) : eventSpeech(currentEvent), [currentEvent, runtimeState]);
   const resultQueue = state.memory.resultQueue || [];
   const resultIndex = state.memory.resultIndex || 0;
   const latestOutcome = resultQueue[resultIndex] || state.memory.latestOutcome;
@@ -1984,7 +2207,7 @@ function App() {
     if (!choice) {
       return Object.fromEntries(STAT_KEYS.map((key) => [key, { value: state[key], previewValue: state[key], direction: 0, active: false }]));
     }
-    const projected = projectChoiceDeltas(currentEvent, choice, state);
+    const projected = projectChoiceDeltas(currentEvent, choice, runtimeState);
     return Object.fromEntries(
       STAT_KEYS.map((key) => {
         const delta = projected.effect[key] || 0;
@@ -1992,7 +2215,31 @@ function App() {
         return [key, { value: state[key], previewValue, direction: Math.sign(delta), active: delta !== 0 }];
       }),
     );
-  }, [state, currentEvent, previewChoice]);
+  }, [state, runtimeState, currentEvent, previewChoice]);
+
+  useEffect(() => {
+    saveMetaProgress(metaProgress);
+  }, [metaProgress]);
+
+  useEffect(() => {
+    const { progress, unlockedIds } = applyAchievementUnlocks(metaProgress);
+    if (!unlockedIds.length) return;
+    setMetaProgress(progress);
+    setAchievementQueue((queue) => [...queue, ...unlockedIds]);
+  }, [metaProgress]);
+
+  useEffect(() => {
+    if (activeAchievementId || !achievementQueue.length) return;
+    const [nextId, ...rest] = achievementQueue;
+    setActiveAchievementId(nextId);
+    setAchievementQueue(rest);
+  }, [achievementQueue, activeAchievementId]);
+
+  useEffect(() => {
+    if (!activeAchievementId) return undefined;
+    const timer = window.setTimeout(() => setActiveAchievementId(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [activeAchievementId]);
 
   useEffect(() => {
     if (openingScreen !== "producer") return undefined;
@@ -2023,9 +2270,43 @@ function App() {
     setOpeningScreen(null);
   };
 
-  const advance = (nextState) => {
-    const ending = pickEnding(state, nextState);
+  const continueFromQuarter = (direction) => {
+    playUiSound(audioRef, direction === "left" ? "swipeLeft" : "swipeRight", soundOn);
+    setState((s) => ({
+      ...s,
+      screen: "event",
+      memory: {
+        ...s.memory,
+        quarterlyNotes: Array.from(new Set([...(s.memory.quarterlyNotes || []), ...(annualSummary.noteIds || [])])),
+      },
+    }));
+  };
+
+  const advance = (nextState, forcedEnding = null) => {
+    const ending = forcedEnding || pickEnding(state, nextState);
     if (ending) {
+      setMetaProgress((progress) => ({
+        ...progress,
+        mainlineProgress: {
+          ...progress.mainlineProgress,
+          true_ending_unlocked:
+            progress.mainlineProgress?.true_ending_unlocked || !!ending.trueEnding,
+          true_ending_seen:
+            progress.mainlineProgress?.true_ending_seen || !!ending.trueEnding,
+        },
+        stats: {
+          ...progress.stats,
+          highestRound: Math.max(progress.stats?.highestRound || 0, nextState.round),
+          completedRuns: (progress.stats?.completedRuns || 0) + 1,
+          endingsSeen: {
+            ...(progress.stats?.endingsSeen || {}),
+            [ending.id]: {
+              title: ending.title,
+              special: !!ending.special,
+            },
+          },
+        },
+      }));
       setState({
         ...nextState,
         screen: "result",
@@ -2103,7 +2384,7 @@ function App() {
     const choice = currentEvent[side];
     playUiSound(audioRef, side === "left" ? "swipeLeft" : "swipeRight", soundOn);
     const routeId = findRouteId({ eventId: currentEvent.id, flags: choice.flags || [] });
-    const projected = projectChoiceDeltas(currentEvent, choice, state);
+    const projected = projectChoiceDeltas(currentEvent, choice, runtimeState);
     const scaledEffect = projected.effect;
     const scaledHidden = projected.hidden;
     const scaledRelations = projected.relations;
@@ -2162,13 +2443,95 @@ function App() {
         resultIndex: 0,
       },
     };
-    advance(next);
+    let forcedEnding = null;
+
+    if (currentEvent.storyArc) {
+      const storyStage = STORY_ARC_STAGE_BY_ID[currentEvent.id] || 0;
+      setMetaProgress((progress) => {
+        const nextKnowledge = {
+          ...progress.knowledge,
+          ...Object.fromEntries((currentEvent.grantsKnowledge || []).map((key) => [key, true])),
+        };
+        const nextProgress = {
+          ...progress,
+          knowledge: nextKnowledge,
+          storyProgress: {
+            ...progress.storyProgress,
+            [currentEvent.storyArc]: Math.max(progress.storyProgress?.[currentEvent.storyArc] || 0, storyStage),
+          },
+          mainlineProgress: {
+            ...progress.mainlineProgress,
+            buffer_role_understood:
+              progress.mainlineProgress?.buffer_role_understood ||
+              (nextKnowledge.knows_predecessor_loop &&
+                nextKnowledge.knows_showcase_is_performance &&
+                nextKnowledge.knows_friend_project_real_purpose),
+            true_ending_available:
+              progress.mainlineProgress?.true_ending_available ||
+              (nextKnowledge.knows_predecessor_loop &&
+                nextKnowledge.knows_showcase_is_performance &&
+                nextKnowledge.knows_friend_project_real_purpose &&
+                nextKnowledge.knows_watchlist_is_allocation &&
+                nextKnowledge.knows_numbers_need_a_narrator &&
+                nextKnowledge.knows_double_reality),
+            true_ending_unlocked:
+              progress.mainlineProgress?.true_ending_unlocked ||
+              currentEvent.storyArc === "mainline_reveal",
+          },
+          stats: {
+            ...progress.stats,
+            highestRound: Math.max(progress.stats?.highestRound || 0, next.round),
+            totalChoices: (progress.stats?.totalChoices || 0) + 1,
+            informedChoiceCount:
+              (progress.stats?.informedChoiceCount || 0) + (choice.__knowledgeVariantApplied ? 1 : 0),
+            seenEventIds: Array.from(new Set([...(progress.stats?.seenEventIds || []), currentEvent.id])),
+          },
+        };
+        return nextProgress;
+      });
+    } else {
+      setMetaProgress((progress) => ({
+        ...progress,
+        stats: {
+          ...progress.stats,
+          highestRound: Math.max(progress.stats?.highestRound || 0, next.round),
+          totalChoices: (progress.stats?.totalChoices || 0) + 1,
+          informedChoiceCount:
+            (progress.stats?.informedChoiceCount || 0) + (choice.__knowledgeVariantApplied ? 1 : 0),
+          seenEventIds: Array.from(new Set([...(progress.stats?.seenEventIds || []), currentEvent.id])),
+        },
+      }));
+    }
+
+    if (currentEvent.trueEnding) {
+      forcedEnding = currentEvent.trueEnding;
+    }
+
+    advance(next, forcedEnding);
   };
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(8px, 2.8vw, 16px)", boxSizing: "border-box", background: theme.appBg, transition: "background 240ms ease" }}>
       <div style={{ width: "min(100%, 430px)", height: "min(calc(100dvh - 16px), 860px)", maxHeight: "calc(100dvh - 16px)", minHeight: 0, boxSizing: "border-box", background: theme.frameBg, borderRadius: 34, overflow: "hidden", border: theme.frameBorder, boxShadow: theme.frameShadow, display: "flex", flexDirection: "column", position: "relative", transition: "background 240ms ease, box-shadow 240ms ease" }}>
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: theme.overlay }} />
+        <AnimatePresence>
+          {activeAchievementId && achievementMap[activeAchievementId] && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              style={achievementToastStyle}
+            >
+              <div style={{ fontSize: 24 }}>{achievementMap[activeAchievementId].icon}</div>
+              <div style={{ display: "grid", gap: 2 }}>
+                <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9f6b4f" }}>成就解锁</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#2f241e" }}>{achievementMap[activeAchievementId].title}</div>
+                <div style={{ fontSize: 12, lineHeight: 1.5, color: "#6b7280" }}>{achievementMap[activeAchievementId].desc}</div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {openingScreen ? (
           <AnimatePresence mode="wait">
@@ -2197,7 +2560,20 @@ function App() {
 
         <div style={{ position: "relative", padding: "12px clamp(12px, 3vw, 16px)", borderBottom: "1px solid rgba(0,0,0,0.05)", background: theme.headerGlow, flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div />
+            <motion.button
+              whileTap={{ scale: 0.92, y: 1 }}
+              transition={{ duration: 0.08 }}
+              onClick={() => setAchievementsOpen(true)}
+              style={iconBtnStyle}
+              title="查看成就"
+            >
+              <div style={{ position: "relative", display: "grid", placeItems: "center" }}>
+                <Trophy size={16} />
+                {!!unlockedAchievementCount && (
+                  <div style={achievementBadgeStyle}>{unlockedAchievementCount}</div>
+                )}
+              </div>
+            </motion.button>
             <div style={{ display: "flex", gap: 8 }}>
               <motion.button
                 whileTap={{ scale: 0.92, y: 1 }}
@@ -2246,6 +2622,9 @@ function App() {
               {state.screen === "event" && (
                 <motion.div key={`event_${state.round}_${currentEvent.id}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={{ width: "100%", display: "grid", justifyItems: "center", gap: 14 }}>
                   <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10 }}>
+                    {currentEvent.storyArc && (
+                      <div style={storyEchoStyle}>{storyArcEcho(currentEvent.storyArc, state)}</div>
+                    )}
                     <div style={speechRoleStyle}>{currentSpeech.speaker}</div>
                     <div style={speechQuoteStyle}>{currentSpeech.quote}</div>
                     <p style={speechDescStyle}>{currentSpeech.followup}</p>
@@ -2272,6 +2651,9 @@ function App() {
                   }}
                 >
                   <div style={{ width: "100%", maxWidth: 360, textAlign: "center", display: "grid", gap: 10 }}>
+                    {latestOutcome.storyArc && (
+                      <div style={storyEchoStyle}>{storyArcEcho(latestOutcome.storyArc, state, 1)}</div>
+                    )}
                     <div style={speechRoleStyle}>{latestOutcome.speaker}</div>
                     <div style={speechQuoteStyle}>{latestOutcome.quote}</div>
                     <p style={speechDescStyle}>{latestOutcome.followup}</p>
@@ -2281,23 +2663,15 @@ function App() {
               )}
 
               {state.screen === "quarter" && (
-                <motion.div key={`quarter_${state.round}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} style={surfacePanelStyle}>
-                  <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9f6b4f" }}>年度经营复盘</div>
-                  <h2 style={titleStyle}>2026 · 第 {state.year} 年复盘</h2>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
-                    {STAT_KEYS.map((key) => (
-                      <div key={key} style={surfaceMiniCardStyle}><div style={{ fontSize: 10, color: "#6b7280" }}>{statLabel(key)}</div><div style={{ fontSize: 22, fontWeight: 900 }}>{state[key]}</div></div>
-                    ))}
-                  </div>
-                  <div style={{ ...surfaceBoxStyle, marginTop: 12 }}>
-                    {annualSummary.notes.map((note, idx) => <div key={idx} style={{ fontSize: 13, lineHeight: 1.6, color: "#4b5563" }}>• {note}</div>)}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-                    <div style={surfaceMiniCardStyle}><div style={{ fontSize: 10, color: "#6b7280" }}>年度优势</div><div style={{ fontWeight: 800 }}>{hiddenLabel(annualSummary.strength.key)}</div></div>
-                    <div style={surfaceMiniCardStyle}><div style={{ fontSize: 10, color: "#6b7280" }}>年度压力</div><div style={{ fontWeight: 800 }}>{hiddenLabel(annualSummary.pressure.key)}</div></div>
-                  </div>
-                  <button onClick={() => setState((s) => ({ ...s, screen: "event" }))} style={primaryBtnStyle}>进入下一年</button>
-                </motion.div>
+                <QuarterReviewCard
+                  key={`quarter_${state.round}`}
+                  annualSummary={annualSummary}
+                  state={state}
+                  surfacePanelStyle={surfacePanelStyle}
+                  surfaceMiniCardStyle={surfaceMiniCardStyle}
+                  surfaceBoxStyle={surfaceBoxStyle}
+                  onAdvance={continueFromQuarter}
+                />
               )}
 
               {state.screen === "ending" && (
@@ -2306,7 +2680,7 @@ function App() {
                     <Skull size={52} color={state.ending.special ? "#8e4b4a" : undefined} />
                   </div>
                   <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: state.ending.special ? "#8e4b4a" : "#9f6b4f" }}>
-                    结局
+                    {state.ending.trueEnding ? "真结局" : "结局"}
                   </div>
                   <h2 style={titleStyle}>{state.ending.title}</h2>
                   <p style={descStyle}>{state.ending.text}</p>
@@ -2340,7 +2714,156 @@ function App() {
           </>
         )}
       </div>
+      <AnimatePresence>
+        {achievementsOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={archiveBackdropStyle}
+            onClick={() => setAchievementsOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 14, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.985 }}
+              transition={{ duration: 0.18 }}
+              onClick={(event) => event.stopPropagation()}
+              style={achievementPanelStyle}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "grid", gap: 4 }}>
+                  <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9f6b4f" }}>长期记录</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: "#2f241e", fontFamily: '"Iowan Old Style", "Georgia", serif' }}>成就墙</div>
+                </div>
+                <button onClick={() => setAchievementsOpen(false)} style={iconBtnStyle} title="关闭">
+                  <X size={16} />
+                </button>
+              </div>
+              <div style={{ ...surfaceBoxStyle, textAlign: "center", marginBottom: 12 }}>
+                <div style={{ fontSize: 14, color: "#4b5563", lineHeight: 1.7 }}>
+                  已解锁 <strong style={{ color: "#2f241e" }}>{unlockedAchievementCount}</strong> / {achievementDefs.length}
+                </div>
+                <div style={{ fontSize: 12, color: "#8a5d45", marginTop: 4 }}>
+                  见过 {metaProgress.stats?.seenEventIds?.length || 0} 张不同事件，最高活到第 {metaProgress.stats?.highestRound || 0} 轮
+                </div>
+              </div>
+              <div style={achievementSummaryGridStyle}>
+                <div style={achievementSummaryCardStyle}>
+                  <div style={achievementSummaryLabelStyle}>认知</div>
+                  <div style={achievementSummaryValueStyle}>{unlockedKnowledgeTotal} / 6</div>
+                  <div style={achievementSummaryHintStyle}>已拼出的核心碎片</div>
+                </div>
+                <div style={achievementSummaryCardStyle}>
+                  <div style={achievementSummaryLabelStyle}>支线</div>
+                  <div style={achievementSummaryValueStyle}>{completedStoryArcTotal} / {TRACKED_STORY_ARCS.length}</div>
+                  <div style={achievementSummaryHintStyle}>走完的故事线</div>
+                </div>
+                <div style={achievementSummaryCardStyle}>
+                  <div style={achievementSummaryLabelStyle}>结局</div>
+                  <div style={achievementSummaryValueStyle}>{seenEndingTotal}</div>
+                  <div style={achievementSummaryHintStyle}>见过的死法与收口</div>
+                </div>
+                <div style={achievementSummaryCardStyle}>
+                  <div style={achievementSummaryLabelStyle}>读法</div>
+                  <div style={achievementSummaryValueStyle}>{metaProgress.stats?.informedChoiceCount || 0}</div>
+                  <div style={achievementSummaryHintStyle}>知情后的选择次数</div>
+                </div>
+              </div>
+              <div style={{ display: "grid", gap: 14, maxHeight: "min(60dvh, 520px)", overflowY: "auto", paddingRight: 2 }}>
+                {achievementGroups.map((group) => (
+                  <div key={group.category} style={{ display: "grid", gap: 8 }}>
+                    <div style={achievementSectionHeaderStyle}>
+                      <div style={{ fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9f6b4f" }}>
+                        {group.category}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#8a5d45" }}>
+                        {group.progress.unlocked} / {group.progress.total}
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {group.items.map((achievement) => {
+                        const unlocked = !!metaProgress.achievements?.[achievement.id];
+                        return (
+                          <div key={achievement.id} style={{ ...achievementItemStyle, opacity: unlocked ? 1 : 0.56 }}>
+                            <div style={{ fontSize: 24, width: 30, textAlign: "center" }}>{achievement.icon}</div>
+                            <div style={{ display: "grid", gap: 3, flex: 1 }}>
+                              <div style={{ fontSize: 15, fontWeight: 800, color: "#2f241e" }}>{achievement.title}</div>
+                              <div style={{ fontSize: 12, lineHeight: 1.55, color: "#6b7280" }}>{achievement.desc}</div>
+                            </div>
+                            <div style={{ fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: unlocked ? "#9f6b4f" : "#b8a398" }}>
+                              {unlocked ? "已解锁" : "未解锁"}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function QuarterReviewCard({ annualSummary, state, surfacePanelStyle, surfaceMiniCardStyle, surfaceBoxStyle, onAdvance }) {
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-160, 0, 160], [-10, 0, 10]);
+  const startedRef = useRef(false);
+  const advanceThreshold = 76;
+
+  const handleEnd = async (_, info) => {
+    const distance = info.offset.x;
+    if (Math.abs(distance) > advanceThreshold) {
+      await animate(x, distance < 0 ? -420 : 420, { duration: 0.18 });
+      if (!startedRef.current) {
+        startedRef.current = true;
+        onAdvance(distance < 0 ? "left" : "right");
+      }
+      return;
+    }
+    animate(x, 0, { type: "spring", stiffness: 360, damping: 28 });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.56}
+      dragMomentum={false}
+      onDragEnd={handleEnd}
+      style={{
+        ...surfacePanelStyle,
+        x,
+        rotate,
+        cursor: "grab",
+        touchAction: "pan-y",
+        WebkitTapHighlightColor: "transparent",
+        userSelect: "none",
+      }}
+    >
+                  <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9f6b4f" }}>年度经营复盘</div>
+                  <h2 style={titleStyle}>2026 · 第 {state.year} 年复盘</h2>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+                    {STAT_KEYS.map((key) => (
+                      <div key={key} style={surfaceMiniCardStyle}><div style={{ fontSize: 10, color: "#6b7280" }}>{statLabel(key)}</div><div style={{ fontSize: 22, fontWeight: 900 }}>{state[key]}</div></div>
+                    ))}
+                  </div>
+                  <div style={{ ...surfaceBoxStyle, marginTop: 12 }}>
+                    {annualSummary.notes.map((note, idx) => <div key={idx} style={{ fontSize: 13, lineHeight: 1.6, color: "#4b5563" }}>• {note}</div>)}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                    <div style={surfaceMiniCardStyle}><div style={{ fontSize: 10, color: "#6b7280" }}>年度优势</div><div style={{ fontWeight: 800 }}>{hiddenLabel(annualSummary.strength.key)}</div></div>
+                    <div style={surfaceMiniCardStyle}><div style={{ fontSize: 10, color: "#6b7280" }}>年度压力</div><div style={{ fontWeight: 800 }}>{hiddenLabel(annualSummary.pressure.key)}</div></div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#9ca3af", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 14 }}>左右滑动以继续</div>
+    </motion.div>
   );
 }
 
@@ -2388,6 +2911,106 @@ const iconBtnStyle = {
   WebkitTapHighlightColor: "transparent",
   userSelect: "none",
 };
+const achievementBadgeStyle = {
+  position: "absolute",
+  top: -8,
+  right: -10,
+  minWidth: 18,
+  height: 18,
+  padding: "0 5px",
+  borderRadius: 999,
+  background: "#9f6b4f",
+  color: "white",
+  fontSize: 10,
+  fontWeight: 800,
+  display: "grid",
+  placeItems: "center",
+  boxShadow: "0 4px 10px rgba(159,107,79,0.24)",
+};
+const achievementToastStyle = {
+  position: "absolute",
+  top: 16,
+  left: 16,
+  right: 16,
+  zIndex: 20,
+  display: "grid",
+  gridTemplateColumns: "auto 1fr",
+  gap: 12,
+  alignItems: "center",
+  padding: "12px 14px",
+  borderRadius: 20,
+  background: "rgba(255,249,242,0.96)",
+  border: "1px solid rgba(159,107,79,0.18)",
+  boxShadow: "0 18px 50px rgba(61,41,26,0.14)",
+  backdropFilter: "blur(10px)",
+};
+const archiveBackdropStyle = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(17,24,39,0.22)",
+  display: "grid",
+  placeItems: "center",
+  padding: 20,
+  zIndex: 40,
+};
+const achievementPanelStyle = {
+  width: "min(100%, 420px)",
+  maxHeight: "min(86dvh, 760px)",
+  borderRadius: 28,
+  background: "#fffdf8",
+  border: "1px solid rgba(0,0,0,0.06)",
+  boxShadow: "0 30px 80px rgba(17,24,39,0.20)",
+  padding: "20px 18px",
+  overflow: "hidden",
+  display: "flex",
+  flexDirection: "column",
+};
+const achievementItemStyle = {
+  display: "grid",
+  gridTemplateColumns: "auto 1fr auto",
+  gap: 12,
+  alignItems: "center",
+  padding: "12px 14px",
+  borderRadius: 18,
+  background: "#fbf7ef",
+  border: "1px solid rgba(0,0,0,0.05)",
+};
+const achievementSummaryGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 8,
+  marginBottom: 14,
+};
+const achievementSummaryCardStyle = {
+  padding: "10px 12px",
+  borderRadius: 16,
+  background: "#fbf7ef",
+  border: "1px solid rgba(0,0,0,0.05)",
+  display: "grid",
+  gap: 2,
+};
+const achievementSummaryLabelStyle = {
+  fontSize: 10,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "#9f6b4f",
+};
+const achievementSummaryValueStyle = {
+  fontSize: 18,
+  fontWeight: 900,
+  color: "#2f241e",
+};
+const achievementSummaryHintStyle = {
+  fontSize: 11,
+  lineHeight: 1.45,
+  color: "#6b7280",
+};
+const achievementSectionHeaderStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "0 2px",
+};
 const producerSplashStyle = { position: "relative", flex: 1, display: "grid", placeItems: "center", overflow: "hidden", background: "linear-gradient(180deg, #f7efe2 0%, #ecdcc8 54%, #e4d6cb 100%)" };
 const producerBackdropStyle = { position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 28%, rgba(255,255,255,0.9), transparent 30%), radial-gradient(circle at 50% 78%, rgba(170,122,84,0.16), transparent 38%)" };
 const producerLockupStyle = { position: "relative", display: "grid", justifyItems: "center", gap: 14, padding: "24px 20px", textAlign: "center" };
@@ -2401,4 +3024,58 @@ const briefingTitleStyle = { fontSize: "clamp(24px, 7.2vw, 31px)", lineHeight: 1
 const briefingBodyStyle = { display: "grid", gap: 14, textAlign: "center" };
 const briefingParagraphStyle = { margin: 0, fontSize: "clamp(15px, 4vw, 17px)", lineHeight: 1.8, color: "#5f4a3f" };
 const briefingHintStyle = { fontSize: 11, color: "#9f6b4f", letterSpacing: "0.22em", textTransform: "uppercase" };
+
+const STORY_ARC_ECHOES = {
+  predecessor_trace: {
+    first: "前任留下的痕迹开始自己浮出来了",
+    return: "前任那条线又往前露了一截",
+  },
+  friend_project: {
+    first: "那个项目又换了个更像样的说法",
+    return: "那个项目还在继续把人往里卷",
+  },
+  showcase_narrative: {
+    first: "那场展示开始露出第二层目的",
+    return: "那场展示的后账还没走完",
+  },
+  hr_watchlist: {
+    first: "那份名单又翻到了你看得懂的一页",
+    return: "那份名单又替谁先接住冲突排好了顺序",
+  },
+  vendor_shadow: {
+    first: "供应商那条暗线又露了一角",
+    return: "那条供应商暗线还在往下长",
+  },
+  bi_anomaly: {
+    first: "那组异常数据还没闭嘴",
+    return: "那组异常数据又把更多人牵了进来",
+  },
+  warehouse_backdoor: {
+    first: "仓里的第二本账又露出来了一点",
+    return: "仓里的两本账还在继续往外露",
+  },
+  mainline_reveal: {
+    first: "这张位置开始把更深一层的真相往外露了",
+    return: "这张位置真正怎么被使用，已经快被你看全了",
+  },
+};
+
+function storyArcEcho(storyArc, state, fallbackSeen = 0) {
+  if (!storyArc) return "";
+  const lines = STORY_ARC_ECHOES[storyArc];
+  if (!lines) return "";
+  const seen = storyArcProgress(state, storyArc).seen || fallbackSeen;
+  return seen >= 1 ? lines.return : lines.first;
+}
+
+const storyEchoStyle = {
+  justifySelf: "center",
+  maxWidth: 336,
+  fontSize: 12,
+  lineHeight: 1.55,
+  color: "#8e6a55",
+  fontFamily: '"Iowan Old Style", "Georgia", serif',
+  letterSpacing: "0.01em",
+  textAlign: "center",
+};
 export default App;

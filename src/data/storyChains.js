@@ -5,10 +5,10 @@ export const storyChains = [
     "priority": 8,
     "role": "共享盘",
     "avatar": "🗂️",
-    "title": "共享盘里还有个前任留下的文件夹，名字像是写给后来的人看的。",
-    "desc": "目录看起来被删过一轮，只剩几张你现在每天都在改的表，像有人来不及把整个痕迹带走。",
+    "title": "共享盘角落里还留着一个前任的文件夹，名字短得像谁都懒得再解释它原本属于谁。",
+    "desc": "里面没什么戏剧性的东西，只有几张你现在也在天天改的表。真正让人发愣的是，它们改到最后一版时，看起来已经和你现在手里的差不多了。",
     "conditions": {
-      "roundMin": 9,
+      "roundMin": 8,
       "alternatives": [
         {
           "allFlags": [
@@ -72,10 +72,10 @@ export const storyChains = [
     "priority": 8,
     "role": "前任的批注",
     "avatar": "📝",
-    "title": "你点开的那份表里，批注像在提前回答你这几个月的每一次犹豫。",
-    "desc": "那个人写过的话并不激烈，只是太像你最近嘴边反复出现、却总来不及讲完的那几句。",
+    "title": "那份表的批注一点开，不像交接，更像有人在格子边上偷偷记了几句怕会上说不出口的话。",
+    "desc": "批注很短，都是“先别正面撞”“这版先过会”“解释留给明天”。你看着看着才发现，它们不像经验，更像一种已经被练熟的动作。",
     "conditions": {
-      "roundMin": 10,
+      "roundMin": 9,
       "alternatives": [
         {
           "allFlags": [
@@ -135,26 +135,26 @@ export const storyChains = [
     }
   },
   {
-    "id": "predecessor_calendar_echo",
+    "id": "predecessor_meeting_grid",
     "storyArc": "predecessor_trace",
-    "priority": 9,
-    "role": "HRBP",
-    "avatar": "📆",
-    "title": "你忽然发现，前任最后几周的日历，和你最近这几周长得几乎一样。",
-    "desc": "一串串会名、备注和临时加塞的时间段排得过分相似，像这个位置本来就会把人推成同一种样子。",
+    "priority": 8,
+    "role": "会议纪要",
+    "avatar": "🧩",
+    "title": "你把前任最后那几周的会议纪要摊开后，发现每次大一点的冲突最后都会被翻成差不多的三步。",
+    "desc": "先做一版能讲的，再找一个人去说，最后把真正的代价往后拖一天。你起初还觉得只是熟悉，直到你发现自己这几周也差不多在这么排。",
     "conditions": {
-      "roundMin": 12,
+      "roundMin": 11,
       "alternatives": [
         {
           "allFlags": [
             "predecessor_trace_read",
-            "temporary_plug"
+            "version_first"
           ]
         },
         {
           "allFlags": [
             "predecessor_trace_read",
-            "version_first"
+            "go_explain"
           ]
         },
         {
@@ -166,7 +166,107 @@ export const storyChains = [
       ]
     },
     "left": {
-      "label": "把交接留在系统里",
+      "label": "照着今天再顶一轮",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_watchlist_is_allocation"
+            ]
+          },
+          "label": "知道这套轮换，也先把今天顶完",
+          "flags": [
+            "predecessor_trace_loop",
+            "predecessor_trace_accepted"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": 2,
+        "team": -1
+      },
+      "hidden": {
+        "bossDependency": 1,
+        "orgFatigue": 1
+      },
+      "relations": {
+        "boss": 1
+      },
+      "flags": [
+        "predecessor_trace_loop"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "把这套排法记下来",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_watchlist_is_allocation"
+            ]
+          },
+          "label": "把这套轮换写进交接里",
+          "flags": [
+            "predecessor_trace_logged",
+            "predecessor_trace_named_loop"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": -2,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 1,
+        "bossDependency": -1
+      },
+      "relations": {
+        "finance": 1,
+        "hr": 1
+      },
+      "flags": [
+        "predecessor_trace_logged"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "predecessor_calendar_echo",
+    "storyArc": "predecessor_trace",
+    "priority": 9,
+    "grantsKnowledge": [
+      "knows_predecessor_loop"
+    ],
+    "role": "HRBP",
+    "avatar": "📆",
+    "title": "你把前任最后几周的日历翻出来时，发现会名和备注几乎能和你这几周一一对上。",
+    "desc": "不是那种大事相似，而是连“先补一版”“会后单聊”“你去说更合适”这种零碎备注都近得过分。你第一次有点分不清，是你在重复前任，还是这位置本来就会把人排成这样。",
+    "conditions": {
+      "roundMin": 13,
+      "alternatives": [
+        {
+          "allFlags": [
+            "predecessor_trace_named_loop",
+            "temporary_plug"
+          ]
+        },
+        {
+          "allFlags": [
+            "predecessor_trace_accepted",
+            "version_first"
+          ]
+        },
+        {
+          "allFlags": [
+            "predecessor_trace_named_loop",
+            "middle_seat_protocol"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "把这位置当回事写进去",
       "effect": {
         "trust": -2,
         "team": 2
@@ -180,12 +280,12 @@ export const storyChains = [
         "hr": 1
       },
       "flags": [
-        "predecessor_trace_logged"
+        "predecessor_trace_truth_written"
       ],
       "schedule": []
     },
     "right": {
-      "label": "先把这轮顶完",
+      "label": "把这套日历继续排下去",
       "effect": {
         "trust": 2,
         "team": -2
@@ -199,7 +299,7 @@ export const storyChains = [
         "hr": -1
       },
       "flags": [
-        "predecessor_trace_loop"
+        "predecessor_trace_truth_swallowed"
       ],
       "schedule": []
     }
@@ -210,10 +310,10 @@ export const storyChains = [
     "priority": 8,
     "role": "老板朋友",
     "avatar": "🎣",
-    "title": "你接下来的不像一个项目，更像一串还没写进项目书里的要求。",
-    "desc": "范围、口径和资源都在边聊边长，像真正要被先确认的从来不是回本，而是谁会继续把它接着。",
+    "title": "你接手时拿到的不是完整项目书，而是一串散在微信、会议纪要和老板口头里的要求。",
+    "desc": "范围每过一周就多一点，名字却每次都还叫那个名字。奇怪的不是它没边界，而是周围每个人都像默认边界可以晚点再说。",
     "conditions": {
-      "roundMin": 8,
+      "roundMin": 7,
       "alternatives": [
         {
           "allFlags": [
@@ -280,10 +380,10 @@ export const storyChains = [
     "priority": 8,
     "role": "老板助理",
     "avatar": "🏷️",
-    "title": "这个项目第三次改名了，像每换一个会场，它就能换一次存在理由。",
-    "desc": "你终于开始分不清大家是在推进项目，还是在替它寻找一个这周更适合摆上桌的身份。",
+    "title": "这个项目又改名了，新的抬头比上一次更体面，也更像一件没人好意思追问用途的事。",
+    "desc": "资料里的目标、预算和归口全都轻轻挪了一下，像不是在重做项目，而是在替它重新找一个这周更方便继续活下去的说法。",
     "conditions": {
-      "roundMin": 10,
+      "roundMin": 9,
       "alternatives": [
         {
           "allFlags": [
@@ -347,32 +447,137 @@ export const storyChains = [
     }
   },
   {
-    "id": "friend_project_sinkhole",
+    "id": "friend_project_table_note",
     "storyArc": "friend_project",
-    "priority": 9,
-    "role": "财务总监",
-    "avatar": "🕳️",
-    "title": "你终于看清这个项目不需要回本，它只需要一直有人愿意往里填。",
-    "desc": "预算、关系、供应商和例外在它身上连成了一张网，像它真正的用途从来就不是经营本身。",
+    "priority": 8,
+    "role": "财务BP",
+    "avatar": "🗒️",
+    "title": "项目过会前夜，你把几版材料摊在桌上，才发现真正变得最快的不是内容，而是它每次被重新定义的理由。",
+    "desc": "有时它是增长，有时它是品牌，有时又只是“先别让关系冷下来”。你开始怀疑，它真正稳定的功能可能根本不写在任何一页纸上。",
     "conditions": {
-      "roundMin": 12,
+      "roundMin": 11,
       "alternatives": [
         {
           "allFlags": [
+            "friend_project_scope_blurred",
+            "meeting_rewrite"
+          ]
+        },
+        {
+          "allFlags": [
             "friend_project_relabel_shifted",
-            "proxy_signature"
+            "board_deck_polish"
           ]
         },
         {
           "allFlags": [
             "friend_project_scope_blurred",
+            "favored_vendor"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "继续按能推进的版本排",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_showcase_is_performance"
+            ]
+          },
+          "label": "按关系需要继续改写它",
+          "flags": [
+            "friend_project_relabel_shifted",
+            "friend_project_mask_rewritten"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": 2,
+        "growth": 1
+      },
+      "hidden": {
+        "executionDebt": 1,
+        "bossDependency": 1,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "boss": 1,
+        "finance": -1
+      },
+      "flags": [
+        "friend_project_relabel_shifted"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "把真实用途写出来",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_showcase_is_performance"
+            ]
+          },
+          "label": "按真实用途和关系写",
+          "flags": [
+            "friend_project_relabel_true",
+            "friend_project_named_for_relation"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": -2,
+        "cash": -1
+      },
+      "hidden": {
+        "dataMaturity": 1,
+        "bossDependency": -1
+      },
+      "relations": {
+        "finance": 1,
+        "boss": -1
+      },
+      "flags": [
+        "friend_project_relabel_true"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "friend_project_sinkhole",
+    "storyArc": "friend_project",
+    "priority": 9,
+    "grantsKnowledge": [
+      "knows_friend_project_real_purpose"
+    ],
+    "role": "财务总监",
+    "avatar": "🕳️",
+    "title": "你顺着预算和例外一路往下看，终于发现这个项目最稳定的从来不是回报，而是总有人替它把下一段接下去。",
+    "desc": "供应商、口径、借口和追加资源最后都绕回同一个地方。它不像一个做得好不好的项目，更像一个不能当场停下来的洞。",
+    "conditions": {
+      "roundMin": 13,
+      "requiresKnowledge": [
+        "knows_showcase_is_performance"
+      ],
+      "alternatives": [
+        {
+          "allFlags": [
+            "friend_project_mask_rewritten",
+            "proxy_signature"
+          ]
+        },
+        {
+          "allFlags": [
+            "friend_project_named_for_relation",
             "favored_vendor",
             "board_deck_polish"
           ]
         },
         {
           "allFlags": [
-            "friend_project_relabel_shifted",
+            "friend_project_mask_rewritten",
             "public_promise"
           ]
         }
@@ -425,10 +630,10 @@ export const storyChains = [
     "priority": 8,
     "role": "品牌负责人",
     "avatar": "🪟",
-    "title": "这场参观更像试镜，不像生意。",
-    "desc": "路线、屏幕、讲稿和样板间都被排得很满，像对方真正想看的不是你们卖什么，而是这家公司还能不能继续把自己演稳。",
+    "title": "这场参观流程排得很满，像大家真正担心的不是看不看得懂，而是会不会哪一段突然看起来不够像样。",
+    "desc": "路线、屏幕、讲稿和停留点都被提前标好了。你一开始只觉得这次接待做得过细，细到不像在接客，更像在排练。",
     "conditions": {
-      "roundMin": 8,
+      "roundMin": 7,
       "alternatives": [
         {
           "allFlags": [
@@ -494,10 +699,10 @@ export const storyChains = [
     "priority": 8,
     "role": "大客户经理",
     "avatar": "🎫",
-    "title": "对方提的第一批例外，不像采购条件，更像在试你们会把戏接到哪一步。",
-    "desc": "账期、包装、返修和汇报方式都被提成了“最好能再灵活一点”，像他真正在确认的不是方案，而是你们会不会为了把台搭稳继续往后退。",
+    "title": "对方第一轮提的不是价格，而是一串“最好再灵活一点”的例外。",
+    "desc": "账期、包装、返修和汇报方式都被轻轻往外推了一格。你慢慢感觉到，他像不是在试方案，而是在试你们这边谁会先松口。",
     "conditions": {
-      "roundMin": 10,
+      "roundMin": 9,
       "alternatives": [
         {
           "allFlags": [
@@ -559,31 +764,135 @@ export const storyChains = [
     }
   },
   {
-    "id": "showcase_not_customer",
+    "id": "showcase_walkthrough_pause",
     "storyArc": "showcase_narrative",
-    "priority": 9,
-    "role": "来访方负责人",
-    "avatar": "🧭",
-    "title": "你慢慢意识到，对方来这一趟，不是为了下单，而是为了判断这家公司还值不值得被继续摆上桌。",
-    "desc": "他问得最多的不是价格，而是你们还能不能继续把同一个故事讲稳。那一刻你突然明白，自己接的从来不只是业务，而是这家公司被继续相信的资格。",
+    "priority": 8,
+    "role": "接待负责人",
+    "avatar": "🚪",
+    "title": "参观路线走到一半时，对方突然停下来，问的不是产品，而是“你们平时也是按这个顺序运转吗”。",
+    "desc": "那一下大家都安静了一瞬，像所有人都明白他其实在问这套场面有多少是今天临时搭出来的，又有多少会被继续当成日常。",
     "conditions": {
-      "roundMin": 12,
+      "roundMin": 11,
       "alternatives": [
         {
           "allFlags": [
-            "showcase_exception_yes",
-            "public_promise"
-          ]
-        },
-        {
-          "allFlags": [
-            "showcase_exception_yes",
-            "investor_story"
+            "showcase_staged",
+            "showcase_exception_yes"
           ]
         },
         {
           "allFlags": [
             "showcase_staged",
+            "public_promise"
+          ]
+        },
+        {
+          "allFlags": [
+            "showcase_unmasked",
+            "board_deck_polish"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "替现场把话接住",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_predecessor_loop"
+            ]
+          },
+          "label": "继续替这场展示把台搭稳",
+          "flags": [
+            "showcase_staged",
+            "showcase_stage_read"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": 2,
+        "growth": 1
+      },
+      "hidden": {
+        "bossDependency": 1,
+        "customerTrust": -1
+      },
+      "relations": {
+        "boss": 1,
+        "sales": 1
+      },
+      "flags": [
+        "showcase_staged"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "把例外摊回桌面",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_predecessor_loop"
+            ]
+          },
+          "label": "把这层样子先撤一点",
+          "flags": [
+            "showcase_exception_no",
+            "showcase_exception_named"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": -2,
+        "growth": -1
+      },
+      "hidden": {
+        "dataMaturity": 1,
+        "customerTrust": 1
+      },
+      "relations": {
+        "boss": -1,
+        "finance": 1
+      },
+      "flags": [
+        "showcase_exception_no"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "showcase_not_customer",
+    "storyArc": "showcase_narrative",
+    "priority": 9,
+    "grantsKnowledge": [
+      "knows_showcase_is_performance"
+    ],
+    "role": "来访方负责人",
+    "avatar": "🧭",
+    "title": "会快结束时你才反应过来，对方真正看重的不是这单怎么下，而是你们这家公司还能不能继续摆出同一个样子。",
+    "desc": "他问得最细的地方都不在价格上，而在“以后会不会变”“流程会不会乱”“讲法能不能一直一样”。你那时才听出来，这趟来的人看的是稳定，不是产品。",
+    "conditions": {
+      "roundMin": 13,
+      "requiresKnowledge": [
+        "knows_predecessor_loop"
+      ],
+      "alternatives": [
+        {
+          "allFlags": [
+            "showcase_exception_buffered",
+            "public_promise"
+          ]
+        },
+        {
+          "allFlags": [
+            "showcase_exception_buffered",
+            "investor_story"
+          ]
+        },
+        {
+          "allFlags": [
+            "showcase_stage_read",
             "need_boss_backing",
             "board_deck_polish"
           ]
@@ -636,10 +945,10 @@ export const storyChains = [
     "priority": 8,
     "role": "HRBP",
     "avatar": "📋",
-    "title": "HRBP把一张观察名单递给你时手停了一下，像忽然意识到这份东西本来不该让你看懂。",
-    "desc": "名单上写的不是谁强谁弱，而是谁“暂时不能动”、谁“适合先谈”、谁“能先接住变化”。你第一次意识到，这张表管的可能不是人，而是冲突先落到谁身上。",
+    "title": "HRBP把一张观察名单递给你时手停了一下，像忽然意识到这页不该让你看太久。",
+    "desc": "名单上没有明显的高低，只是标着“暂时不能动”“适合先谈”“可承压”。你一开始只觉得这是人事语言，越看越觉得这些词不像在写人，更像在排顺序。",
     "conditions": {
-      "roundMin": 8,
+      "roundMin": 7,
       "alternatives": [
         {
           "allFlags": [
@@ -704,10 +1013,10 @@ export const storyChains = [
     "priority": 8,
     "role": "HRBP",
     "avatar": "🗃️",
-    "title": "你后来再看那份名单，才发现最刺眼的一列叫“承压稳定性”。",
-    "desc": "那列分数高的人，不是业绩最好的人，而是最不容易在会上翻脸、最适合把变化吞进自己肚子里的人。你开始明白，这张表也许一直在替公司挑谁更适合被先拿去缓冲。",
+    "title": "你第二次翻那份名单时，才发现最刺眼的一列叫“承压稳定性”。",
+    "desc": "分高的人不一定最强，只是更不容易在会上翻脸、更适合先把难听的话消化掉。那一列看久了，不像能力项，像使用说明。",
     "conditions": {
-      "roundMin": 10,
+      "roundMin": 9,
       "alternatives": [
         {
           "allFlags": [
@@ -768,25 +1077,125 @@ export const storyChains = [
     }
   },
   {
-    "id": "watchlist_rotation",
+    "id": "watchlist_meeting_order",
     "storyArc": "hr_watchlist",
-    "priority": 9,
-    "role": "HRD",
-    "avatar": "♻️",
-    "title": "你终于明白，那份名单真正管理的不是人才，而是冲突该先压在谁身上。",
-    "desc": "有人适合先安抚，有人适合先牺牲，有人适合先顶住。而你这个位置，像是默认不写在名单上，却始终排在最前面的一类。",
+    "priority": 8,
+    "role": "HRBP",
+    "avatar": "🪜",
+    "title": "你后来发现，那份名单不仅排谁先谈，还排谁先去参加哪种会、谁先被放进哪种气氛里。",
+    "desc": "有些人总被安排在“先安抚”的会里，有些人总是在“先讲道理”的会里。你第一次觉得它像不是在排管理动作，而是在排每个人该先接哪种震动。",
     "conditions": {
-      "roundMin": 12,
+      "roundMin": 11,
       "alternatives": [
         {
           "allFlags": [
-            "hr_watchlist_questioned",
-            "seat_cost"
+            "hr_watchlist_seen",
+            "hr_watchlist_questioned"
           ]
         },
         {
           "allFlags": [
             "hr_watchlist_smoothed",
+            "default_receiver"
+          ]
+        },
+        {
+          "allFlags": [
+            "hr_watchlist_seen",
+            "seat_cost"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "记住谁总在前面",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_predecessor_loop"
+            ]
+          },
+          "label": "记住这像一张轮换表",
+          "flags": [
+            "hr_watchlist_logged",
+            "watchlist_rotation_named"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": -1,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 1,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "hr": 1
+      },
+      "flags": [
+        "hr_watchlist_logged"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先把这轮排过去",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_predecessor_loop"
+            ]
+          },
+          "label": "知道也先当作普通安排",
+          "flags": [
+            "hr_watchlist_buried",
+            "watchlist_rotation_accepted"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": 2,
+        "team": -1
+      },
+      "hidden": {
+        "orgFatigue": 1,
+        "bossDependency": 1
+      },
+      "relations": {
+        "boss": 1,
+        "hr": -1
+      },
+      "flags": [
+        "hr_watchlist_buried"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "watchlist_rotation",
+    "storyArc": "hr_watchlist",
+    "priority": 9,
+    "grantsKnowledge": [
+      "knows_watchlist_is_allocation"
+    ],
+    "role": "HRD",
+    "avatar": "♻️",
+    "title": "你终于明白，那份名单真正排的不是人才，而是变化先落到谁身上。",
+    "desc": "有人适合先安抚，有人适合先牺牲，有人适合先顶住。最怪的是，你这位置明明不在表里，却总像排在最前面。",
+    "conditions": {
+      "roundMin": 13,
+      "alternatives": [
+        {
+          "allFlags": [
+            "watchlist_rotation_named",
+            "seat_cost"
+          ]
+        },
+        {
+          "allFlags": [
+            "watchlist_rotation_accepted",
             "normal_turnover"
           ]
         },
@@ -846,7 +1255,7 @@ export const storyChains = [
     "title": "采购递给你两套供应商对账表，说法都能圆，只有抬头和付款路径对不上。",
     "desc": "他没直接让你帮忙遮，只问你想看业务版本，还是看“会里更省事”的版本。",
     "conditions": {
-      "roundMin": 8,
+      "roundMin": 7,
       "alternatives": [
         {
           "allFlags": [
@@ -916,7 +1325,7 @@ export const storyChains = [
     "title": "法务把两家看起来不相干的供应商并到一页时，你第一次看见它们背后像连着同一个人。",
     "desc": "报价可以分开，抬头可以分开，真正要走的关系却像从来就没打算分开。",
     "conditions": {
-      "roundMin": 10,
+      "roundMin": 9,
       "alternatives": [
         {
           "allFlags": [
@@ -984,7 +1393,7 @@ export const storyChains = [
     "title": "你最后看明白，采购体系维护的有时不是供货效率，而是一条不能断的关系回路。",
     "desc": "单价、服务费、项目支持和“顺手帮忙”一起摊开后，你第一次意识到有些预算存在的意义，从来就不是经营本身。",
     "conditions": {
-      "roundMin": 12,
+      "roundMin": 11,
       "alternatives": [
         {
           "allFlags": [
@@ -1051,10 +1460,10 @@ export const storyChains = [
     "priority": 8,
     "role": "BI经理",
     "avatar": "📉",
-    "title": "BI 半夜给你发了一张截图，说这条曲线如果是真的，那白天会上讲的就只能有一版是演的。",
-    "desc": "图上有几处陡得不自然的尖峰，像有人不是在修业务，而是在修一条更适合被端上桌的走势。",
+    "title": "BI 半夜给你发了一张截图，说这条曲线和白天会上那版，不可能同时都算真的。",
+    "desc": "图上有几处尖峰陡得不自然，像有人动的不是业务，而是那条更适合被端上桌的走势。",
     "conditions": {
-      "roundMin": 8,
+      "roundMin": 7,
       "alternatives": [
         {
           "allFlags": [
@@ -1120,9 +1529,9 @@ export const storyChains = [
     "role": "BI经理",
     "avatar": "🧮",
     "title": "你们往前追那几处尖峰时，发现它们对齐的不是经营节奏，而是几场关键汇报和外部会面。",
-    "desc": "那一刻你开始分不清数据是在解释业务，还是业务一直在配合某个更需要被展示的数据版本活着。",
+    "desc": "那几次修正总在要上桌前发生。你第一次不太愿意承认，数据像不是在解释业务，而是在等业务来配合它。",
     "conditions": {
-      "roundMin": 10,
+      "roundMin": 9,
       "alternatives": [
         {
           "allFlags": [
@@ -1182,25 +1591,128 @@ export const storyChains = [
     }
   },
   {
-    "id": "bi_anomaly_owner",
+    "id": "bi_room_version",
     "storyArc": "bi_anomaly",
-    "priority": 9,
-    "role": "BI经理",
-    "avatar": "🧠",
-    "title": "BI 最后问你的不是哪版更真，而是：如果两版都要留，那以后到底谁来替它们一起活着？",
-    "desc": "你第一次意识到，这条线真正争的已经不是分析权，而是谁愿意继续替一份被修过的真相背书、解释、挨骂，然后把它带进下一场会。",
+    "priority": 8,
+    "role": "财务BP",
+    "avatar": "🪞",
+    "title": "你把那几次曲线异动和会议时间并在一页上时，第一页第一次不像分析报告，更像排练记录。",
+    "desc": "异常不是随业务长出来的，而总在要上桌前被抹平、改名或解释掉。你终于开始怀疑，数字不是在追现实，而是在追下一场会需要它长成什么样。",
     "conditions": {
-      "roundMin": 12,
+      "roundMin": 11,
       "alternatives": [
         {
           "allFlags": [
-            "bi_anomaly_traced",
-            "numbers_discredited"
+            "bi_anomaly_seen",
+            "bi_anomaly_traced"
           ]
         },
         {
           "allFlags": [
             "bi_anomaly_explained",
+            "go_explain"
+          ]
+        },
+        {
+          "allFlags": [
+            "bi_anomaly_seen",
+            "version_first"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "给它留原始痕迹",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_showcase_is_performance"
+            ]
+          },
+          "label": "给原图留一条活路",
+          "flags": [
+            "bi_anomaly_logged",
+            "bi_truth_kept_raw"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": -1,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 1,
+        "bossDependency": -1
+      },
+      "relations": {
+        "finance": 1,
+        "legal": 1
+      },
+      "flags": [
+        "bi_anomaly_logged"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先写成解释口径",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_showcase_is_performance"
+            ]
+          },
+          "label": "先把它翻成能过会的话",
+          "flags": [
+            "bi_anomaly_folded",
+            "bi_truth_translated"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": 2
+      },
+      "hidden": {
+        "executionDebt": 1,
+        "bossDependency": 1
+      },
+      "relations": {
+        "boss": 1,
+        "finance": -1
+      },
+      "flags": [
+        "bi_anomaly_folded"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "bi_anomaly_owner",
+    "storyArc": "bi_anomaly",
+    "priority": 9,
+    "grantsKnowledge": [
+      "knows_numbers_need_a_narrator"
+    ],
+    "role": "BI经理",
+    "avatar": "🧠",
+    "title": "BI 最后问你的不是哪版更真，而是：如果两版都得留，以后谁负责一直把它们讲圆。",
+    "desc": "你那时才反应过来，这条线争的早不是分析权，而是谁来替一份修过的真相继续活在会里、版本里和你的嘴里。",
+    "conditions": {
+      "roundMin": 13,
+      "requiresKnowledge": [
+        "knows_showcase_is_performance"
+      ],
+      "alternatives": [
+        {
+          "allFlags": [
+            "bi_truth_kept_raw",
+            "numbers_discredited"
+          ]
+        },
+        {
+          "allFlags": [
+            "bi_truth_translated",
             "go_explain"
           ]
         },
@@ -1256,10 +1768,10 @@ export const storyChains = [
     "priority": 8,
     "role": "仓库主管",
     "avatar": "🚚",
-    "title": "仓库主管深夜给你发消息，说有些货位今晚移动不是为了发货，是为了让明天看起来还像正常运转。",
-    "desc": "他没说这是命令，只说“如果你明早要来，最好先知道你看到的可能不是今天真正的仓”。那语气不像求助，像是在提醒你这地方早就学会替别人演示稳定。",
+    "title": "仓库主管深夜给你发消息，说今晚有几排货位要挪，但不是因为明天真有那批货要发。",
+    "desc": "他没说是谁让挪的，只说“你明早要来看的话，最好先知道看到的不一定是今天真正的仓”。那语气平得过头，像这件事已经做过不止一次。",
     "conditions": {
-      "roundMin": 8,
+      "roundMin": 7,
       "alternatives": [
         {
           "allFlags": [
@@ -1325,10 +1837,10 @@ export const storyChains = [
     "priority": 8,
     "role": "仓库主管",
     "avatar": "📸",
-    "title": "你第二次进仓时终于看懂：前面摆着的是给镜头看的排面，后面堆着的才是今天真正没处理掉的东西。",
-    "desc": "一边是为参观、会议和截图准备的整齐，另一边是退货、返工和临时挪出来的空位。你第一次明白，仓库不是乱，是被要求同时服务两个现实。",
+    "title": "你第二次进仓时终于看懂：前排摆的是能被拍进去的整齐，后排堆的才是今天真正没消化掉的东西。",
+    "desc": "一边是给参观、会议和截图准备的排面，一边是退货、返工和临时挪出来的空位。仓不是简单地乱，而是被要求同时对两种看法负责。",
     "conditions": {
-      "roundMin": 10,
+      "roundMin": 9,
       "alternatives": [
         {
           "allFlags": [
@@ -1390,25 +1902,129 @@ export const storyChains = [
     }
   },
   {
-    "id": "warehouse_two_books",
+    "id": "warehouse_route_overlay",
     "storyArc": "warehouse_backdoor",
-    "priority": 9,
+    "priority": 8,
     "role": "仓储总监",
-    "avatar": "📚",
-    "title": "你终于接受这仓里一直有两本账：一本写给操作，一本写给被看见。",
-    "desc": "真正邪门的不是有人在做样子，而是所有人都默认这两本账要同时存在，只是最后总要有一个人负责把它们翻译成同一个现实。而那个人，越来越像你。",
+    "avatar": "🗺️",
+    "title": "仓储总监把明早参观路线和今晚调位路线叠在一起给你看时，你第一次发现两套箭头根本不是为同一件事画的。",
+    "desc": "一套路线是为了让人看到“还在正常运转”，另一套路线是为了把今天真正处理不掉的东西塞到镜头之外。它们居然长期能同时存在，才是最怪的地方。",
     "conditions": {
-      "roundMin": 12,
+      "roundMin": 11,
       "alternatives": [
         {
           "allFlags": [
-            "warehouse_backdoor_real",
-            "inventory_mirage"
+            "warehouse_backdoor_seen",
+            "warehouse_backdoor_real"
+          ]
+        },
+        {
+          "allFlags": [
+            "warehouse_backdoor_allowed",
+            "showcase_staged"
           ]
         },
         {
           "allFlags": [
             "warehouse_backdoor_show",
+            "inventory_mirage"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "把两套路都摊开",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_showcase_is_performance"
+            ]
+          },
+          "label": "承认仓里一直有两套现实",
+          "flags": [
+            "warehouse_backdoor_real",
+            "warehouse_double_reality_seen"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": -2,
+        "cash": -1
+      },
+      "hidden": {
+        "dataMaturity": 1,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "ops": 1,
+        "boss": -1
+      },
+      "flags": [
+        "warehouse_backdoor_real"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "继续保住展示那套",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_showcase_is_performance"
+            ]
+          },
+          "label": "先让两套现实继续并排活着",
+          "flags": [
+            "warehouse_backdoor_show",
+            "warehouse_double_reality_kept"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": 2,
+        "growth": 1
+      },
+      "hidden": {
+        "executionDebt": 1,
+        "bossDependency": 1
+      },
+      "relations": {
+        "boss": 1,
+        "ops": -1
+      },
+      "flags": [
+        "warehouse_backdoor_show"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "warehouse_two_books",
+    "storyArc": "warehouse_backdoor",
+    "priority": 9,
+    "grantsKnowledge": [
+      "knows_double_reality"
+    ],
+    "role": "仓储总监",
+    "avatar": "📚",
+    "title": "你终于接受这仓里一直有两本账：一本写给操作，一本写给被看见。",
+    "desc": "真正邪门的不是有人做样子，而是所有人都默认这两本账得一起留着，只是最后总要有人把它们翻译成同一个现实。而那件事，越来越像你的工作。",
+    "conditions": {
+      "roundMin": 13,
+      "requiresKnowledge": [
+        "knows_showcase_is_performance"
+      ],
+      "alternatives": [
+        {
+          "allFlags": [
+            "warehouse_double_reality_seen",
+            "inventory_mirage"
+          ]
+        },
+        {
+          "allFlags": [
+            "warehouse_double_reality_kept",
             "showcase_not_customer"
           ]
         },
@@ -1459,5 +2075,215 @@ export const storyChains = [
       ],
       "schedule": []
     }
+  },
+  {
+    "id": "mainline_empty_seat",
+    "storyArc": "mainline_reveal",
+    "priority": 11,
+    "role": "老板助理",
+    "avatar": "🪑",
+    "title": "行政把一张空着的名牌先放到了会议室里，问你交接模板要不要提前整理一版。",
+    "desc": "她语气轻得像只是在确认流程。可你第一次真切地感觉到，这位置真正稳定的从来不是名字，而是总有人要坐进去，把上一轮没接完的东西重新接起来。",
+    "conditions": {
+      "roundMin": 15,
+      "requiresKnowledge": [
+        "knows_predecessor_loop",
+        "knows_showcase_is_performance",
+        "knows_friend_project_real_purpose"
+      ],
+      "storyProgressMin": {
+        "predecessor_trace": 4,
+        "showcase_narrative": 4,
+        "friend_project": 4
+      },
+      "alternatives": [
+        {
+          "allFlags": [
+            "predecessor_trace_named_loop",
+            "showcase_stage_read",
+            "friend_project_mask_rewritten"
+          ]
+        },
+        {
+          "allFlags": [
+            "predecessor_trace_accepted",
+            "showcase_exception_buffered",
+            "friend_project_named_for_relation"
+          ]
+        },
+        {
+          "allFlags": [
+            "predecessor_trace_named_loop",
+            "showcase_exception_named",
+            "friend_project_mask_rewritten"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "把交接提纲拉出来",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_watchlist_is_allocation",
+              "knows_numbers_need_a_narrator"
+            ]
+          },
+          "label": "把这位置怎么接事的逻辑拉出来",
+          "flags": [
+            "mainline_reveal_opened",
+            "mainline_truth_faced"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": -1,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 1,
+        "bossDependency": -1
+      },
+      "relations": {
+        "finance": 1,
+        "boss": -1
+      },
+      "flags": [
+        "mainline_reveal_opened"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "先把纸翻过去",
+      "variants": [
+        {
+          "when": {
+            "requiresKnowledge": [
+              "knows_watchlist_is_allocation",
+              "knows_numbers_need_a_narrator"
+            ]
+          },
+          "label": "先让下一个人继续接",
+          "flags": [
+            "mainline_reveal_delayed",
+            "mainline_truth_deferred"
+          ]
+        }
+      ],
+      "effect": {
+        "trust": 1
+      },
+      "hidden": {
+        "orgFatigue": 1,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "boss": 1
+      },
+      "flags": [
+        "mainline_reveal_delayed"
+      ],
+      "schedule": []
+    }
+  },
+  {
+    "id": "mainline_nameplate",
+    "storyArc": "mainline_reveal",
+    "priority": 12,
+    "role": "你自己",
+    "avatar": "🪪",
+    "title": "你终于明白，这家公司真正稳定的，不是方法，也不是人，而是这个位置总能把冲突先接成还能继续开的下一轮。",
+    "desc": "前任留下的表、那场被排稳的接待、那个始终不肯停下来的项目，最后都指向同一个地方：你以为自己在做经营，很多时候却是在替这套系统把本该当场爆开的东西先接住。 ",
+    "trueEnding": {
+      "id": "true_ending",
+      "special": true,
+      "trueEnding": true,
+      "title": "真结局：位置不是空缺，是机制",
+      "text": "你终于看清，这个岗位被反复换人，不是因为总有人做不好，而是因为它本来就被用来先接冲突、先翻译代价、先替系统把场面维持到下一轮。",
+      "memo": "你一直以为自己在做经营判断。走到最后才明白，很多判断根本不属于这个位置，可后果总会先落到这个位置上。",
+      "handoff": "这一次，交接没有立刻开始。会议室难得空了一会儿，像公司第一次不得不承认：它一直需要的，从来不是下一个更合适的人，而是一个总得有人坐进去的位置。"
+    },
+    "conditions": {
+      "roundMin": 16,
+      "requiresKnowledge": [
+        "knows_predecessor_loop",
+        "knows_showcase_is_performance",
+        "knows_friend_project_real_purpose",
+        "knows_watchlist_is_allocation",
+        "knows_numbers_need_a_narrator",
+        "knows_double_reality"
+      ],
+      "storyProgressMin": {
+        "predecessor_trace": 4,
+        "showcase_narrative": 4,
+        "friend_project": 4,
+        "hr_watchlist": 4,
+        "bi_anomaly": 4,
+        "warehouse_backdoor": 4
+      },
+      "alternatives": [
+        {
+          "allFlags": [
+            "mainline_truth_faced",
+            "buffer_role_reveal"
+          ]
+        },
+        {
+          "allFlags": [
+            "mainline_truth_faced",
+            "replacement_ready"
+          ]
+        },
+        {
+          "allFlags": [
+            "mainline_truth_deferred",
+            "seat_without_power"
+          ]
+        }
+      ]
+    },
+    "left": {
+      "label": "把真相写进交接里",
+      "effect": {
+        "trust": -2,
+        "team": 1
+      },
+      "hidden": {
+        "dataMaturity": 2,
+        "bossDependency": -2
+      },
+      "relations": {
+        "finance": 1,
+        "boss": -2
+      },
+      "flags": [
+        "mainline_truth_written"
+      ],
+      "schedule": []
+    },
+    "right": {
+      "label": "把位置留给下一个人自己看懂",
+      "effect": {
+        "team": -1
+      },
+      "hidden": {
+        "orgFatigue": 1,
+        "politicalHeat": 1
+      },
+      "relations": {
+        "boss": -1,
+        "hr": -1
+      },
+      "flags": [
+        "mainline_truth_withheld"
+      ],
+      "schedule": []
+    }
   }
 ];
+
+export const storyArcLengths = storyChains.reduce((acc, event) => {
+  acc[event.storyArc] = (acc[event.storyArc] || 0) + 1;
+  return acc;
+}, {});
